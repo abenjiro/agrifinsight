@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: agrifinsight_postgres
+    environment:
+      POSTGRES_DB: agrifinsight
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - agrifinsight_network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: agrifinsight_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - agrifinsight_network
+
+  # Backend API
+  backend:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    container_name: agrifinsight_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@postgres:5432/agrifinsight
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ../../backend:/app
+      - uploads_data:/app/uploads
+    networks:
+      - agrifinsight_network
+
+  # Frontend Web (Development)
+  frontend-web:
+    build:
+      context: ../../frontend/web
+      dockerfile: Dockerfile
+    container_name: agrifinsight_frontend_web
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+    volumes:
+      - ../../frontend/web:/app
+      - /app/node_modules
+    networks:
+      - agrifinsight_network
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads_data:
+
+networks:
+  agrifinsight_network:
+    driver: bridge
