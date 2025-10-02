@@ -6,11 +6,17 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.responses import JSONResponse
 from typing import List, Optional
 import os
+import shutil
 from datetime import datetime
+from pathlib import Path
 
 from app.config import settings
+from app.services.ai_service import AIService
 
 router = APIRouter(prefix="/analysis", tags=["image analysis"])
+
+# Initialize AI service
+ai_service = AIService()
 
 @router.post("/upload")
 async def upload_image(
@@ -34,18 +40,43 @@ async def upload_image(
             detail=f"File size {file.size} exceeds maximum allowed size of {settings.max_file_size} bytes"
         )
     
-    # TODO: Save file to storage
-    # TODO: Create database record
-    # TODO: Queue for AI processing
+    # Create uploads directory if it doesn't exist
+    upload_dir = Path(settings.upload_dir)
+    upload_dir.mkdir(exist_ok=True)
     
-    return {
-        "message": "Image upload endpoint - to be implemented",
-        "filename": file.filename,
-        "content_type": file.content_type,
-        "size": file.size,
-        "farm_id": farm_id,
-        "field_id": field_id
-    }
+    # Generate unique filename
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    file_extension = Path(file.filename).suffix if file.filename else ".jpg"
+    filename = f"{timestamp}_{file.filename or 'image'}{file_extension}"
+    file_path = upload_dir / filename
+    
+    try:
+        # Save file
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        # Analyze image with AI
+        analysis_result = ai_service.analyze_crop_health(str(file_path))
+        
+        # TODO: Save to database
+        # TODO: Create database record for crop image and analysis result
+        
+        return {
+            "message": "Image uploaded and analyzed successfully",
+            "filename": filename,
+            "file_path": str(file_path),
+            "content_type": file.content_type,
+            "size": file.size,
+            "farm_id": farm_id,
+            "field_id": field_id,
+            "analysis_result": analysis_result
+        }
+        
+    except Exception as e:
+        # Clean up file if analysis fails
+        if file_path.exists():
+            file_path.unlink()
+        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
 
 @router.get("/{image_id}/status")
 async def get_analysis_status(image_id: int):

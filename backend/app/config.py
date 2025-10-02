@@ -15,12 +15,12 @@ class Settings(BaseSettings):
     debug: bool = False
     
     # Database
-    database_url: str = "postgresql://user:password@localhost/agrifinsight"
+    database_url: str = "postgresql://postgres:root%40123@localhost/agrifinsight"
     database_host: str = "localhost"
     database_port: int = 5432
     database_name: str = "agrifinsight"
-    database_user: str = "user"
-    database_password: str = "password"
+    database_user: str = "postgres"
+    database_password: str = "root@123"
     
     # Redis
     redis_url: str = "redis://localhost:6379"
