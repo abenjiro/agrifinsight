@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
-import { Layout } from './components/Layout'
+import { DashboardLayout } from './components/DashboardLayout'
+import { LandingLayout } from './components/LandingLayout'
 import { HomePage } from './pages/HomePage'
 import { DashboardPage } from './pages/DashboardPage'
 import { AnalysisPage } from './pages/AnalysisPage'
@@ -9,16 +10,41 @@ import { RegisterPage } from './pages/RegisterPage'
 
 function App() {
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/analysis" element={<AnalysisPage />} />
-        <Route path="/recommendations" element={<RecommendationsPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-      </Routes>
-    </Layout>
+    <Routes>
+      {/* Landing pages with Header and Footer */}
+      <Route path="/" element={
+        <LandingLayout>
+          <HomePage />
+        </LandingLayout>
+      } />
+      <Route path="/login" element={
+        <LandingLayout>
+          <LoginPage />
+        </LandingLayout>
+      } />
+      <Route path="/register" element={
+        <LandingLayout>
+          <RegisterPage />
+        </LandingLayout>
+      } />
+      
+      {/* Dashboard pages with DashboardLayout */}
+      <Route path="/dashboard" element={
+        <DashboardLayout>
+          <DashboardPage />
+        </DashboardLayout>
+      } />
+      <Route path="/analysis" element={
+        <DashboardLayout>
+          <AnalysisPage />
+        </DashboardLayout>
+      } />
+      <Route path="/recommendations" element={
+        <DashboardLayout>
+          <RecommendationsPage />
+        </DashboardLayout>
+      } />
+    </Routes>
   )
 }
 

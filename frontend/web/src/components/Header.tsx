@@ -1,116 +1,65 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { Menu, X, User, LogOut, Settings } from 'lucide-react'
+import { Home, Inbox, BarChart3, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
 
-export function Header() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isProfileOpen, setIsProfileOpen] = useState(false)
-  const navigate = useNavigate()
+const navigationLinks = [
+  { label: "Home", href: "/", icon: Home, active: true },
+  { label: "Features", href: "#features", icon: Inbox, active: false },
+  { label: "About Us", href: "#about", icon: BarChart3, active: false },
+];
 
-  const handleLogout = () => {
-    localStorage.removeItem('auth_token')
-    navigate('/login')
-  }
-
-  return (
-    <header className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+const Logo = () => (
+//   <div className="animate-spin rounded-full border-2 border-gray-400 border-t-transparent size-6" />
+  <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">A</span>
-              </div>
-              <span className="text-xl font-bold text-gray-900">AgriFinSight</span>
-            </Link>
-          </div>
+    </div>
+);
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link to="/dashboard" className="text-gray-700 hover:text-primary-600 transition-colors">
-              Dashboard
-            </Link>
-            <Link to="/analysis" className="text-gray-700 hover:text-primary-600 transition-colors">
-              Analysis
-            </Link>
-            <Link to="/recommendations" className="text-gray-700 hover:text-primary-600 transition-colors">
-              Recommendations
-            </Link>
-          </nav>
 
-          {/* User Menu */}
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <button
-                onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex items-center space-x-2 text-gray-700 hover:text-primary-600 transition-colors"
+export default function Navbar() {
+  return (
+    <header className="border-b px-4 md:px-6">
+      <div className="flex h-16 items-center justify-between gap-4">
+        {/* Left Nav */}
+        <div className="flex flex-1 items-center gap-6">
+          {navigationLinks.map((link, idx) => {
+            const Icon = link.icon;
+            return (
+              <Link
+                key={idx}
+                to={link.href}
+                className={`flex items-center gap-2 text-sm font-medium ${
+                  link.active ? "text-black font-semibold" : "text-gray-600 hover:text-black"
+                }`}
               >
-                <User className="w-5 h-5" />
-                <span className="hidden sm:block">John Doe</span>
-              </button>
-
-              {isProfileOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                  <Link
-                    to="/profile"
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => setIsProfileOpen(false)}
-                  >
-                    <Settings className="w-4 h-4 mr-3" />
-                    Settings
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    <LogOut className="w-4 h-4 mr-3" />
-                    Logout
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Mobile menu button */}
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 rounded-md text-gray-700 hover:text-primary-600 hover:bg-gray-100"
-            >
-              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
+                <Icon size={16} className="opacity-70" />
+                {link.label}
+              </Link>
+            );
+          })}
         </div>
 
-        {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
-              <Link
-                to="/dashboard"
-                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Dashboard
-              </Link>
-              <Link
-                to="/analysis"
-                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Analysis
-              </Link>
-              <Link
-                to="/recommendations"
-                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Recommendations
-              </Link>
-            </div>
-          </div>
-        )}
+        {/* Middle: Logo */}
+        <div className="flex items-center">
+          <Logo />
+        </div>
+
+        {/* Right Side */}
+        <div className="flex flex-1 items-center justify-end gap-4">
+          <Link 
+            to="/login" 
+            className="text-gray-600 hover:text-black transition-colors text-sm font-medium"
+          >
+            Sign In
+          </Link>
+          <Link 
+            to="/register" 
+            className="flex items-center gap-1 rounded-lg bg-black px-3 py-1 text-white text-sm hover:bg-gray-800 transition-colors"
+          >
+            <Sparkles size={16} className="opacity-70" />
+            <span className="hidden sm:inline">Get Started</span>
+          </Link>
+        </div>
       </div>
     </header>
-  )
+  );
 }
-

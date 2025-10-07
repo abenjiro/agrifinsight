@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { 
   Lightbulb, 
   TrendingUp, 
-  AlertTriangle, 
   CheckCircle, 
   Calendar,
   Droplets,

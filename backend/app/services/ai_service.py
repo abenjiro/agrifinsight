@@ -13,11 +13,14 @@ from pathlib import Path
 ai_models_path = Path(__file__).parent.parent.parent.parent / "ai" / "models"
 sys.path.append(str(ai_models_path))
 
+# Set the models directory for ModelManager
+MODELS_DIR = str(ai_models_path)
+
 try:
-    from model_manager import ModelManager
+    from simple_model_manager import SimpleModelManager
 except ImportError:
     # Fallback for when AI models are not available
-    ModelManager = None
+    SimpleModelManager = None
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +34,9 @@ class AIService:
     def _initialize_models(self):
         """Initialize AI models"""
         try:
-            if ModelManager:
-                self.model_manager = ModelManager()
-                logger.info("AI models initialized successfully")
+            if SimpleModelManager:
+                self.model_manager = SimpleModelManager(MODELS_DIR)
+                logger.info(f"AI models initialized successfully from {MODELS_DIR}")
             else:
                 logger.warning("AI models not available - using mock responses")
         except Exception as e:
@@ -42,13 +45,16 @@ class AIService:
     
     def analyze_crop_health(self, image_path: str) -> Dict[str, Any]:
         """Analyze crop health from image"""
-        if self.model_manager:
+        if self.model_manager and self.model_manager.disease_model:
             try:
-                return self.model_manager.analyze_crop_health(image_path)
+                result = self.model_manager.analyze_crop_health(image_path)
+                logger.info(f"Crop health analysis completed for {image_path}")
+                return result
             except Exception as e:
                 logger.error(f"Error in crop health analysis: {str(e)}")
                 return self._get_mock_disease_analysis()
         else:
+            logger.warning("Disease detection model not available, using mock response")
             return self._get_mock_disease_analysis()
     
     def predict_planting_time(self, crop_type: str, weather_data: Dict, 

@@ -124,3 +124,5 @@ The app uses Tailwind CSS with a custom design system:
 4. Write meaningful commit messages
 5. Test your changes thoroughly
 
+
+

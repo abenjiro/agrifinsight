@@ -44,11 +44,29 @@ export function AnalysisPage() {
     if (!uploadedFile) return
 
     setIsAnalyzing(true)
-    // Simulate API call
-    setTimeout(() => {
+    
+    try {
+      const formData = new FormData()
+      formData.append('image', uploadedFile)
+      formData.append('farm_id', '1') // Default farm ID for now
+      
+      const response = await fetch('http://localhost:8000/api/analysis/upload', {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (!response.ok) {
+        throw new Error('Analysis failed')
+      }
+      
+      const data = await response.json()
+      setAnalysisResult(data.analysis_result)
+    } catch (error) {
+      console.error('Error analyzing image:', error)
+      // Fallback to mock data if API fails
       setAnalysisResult({
-        disease: 'Tomato Blight',
-        confidence: 0.87,
+        disease_detected: 'Tomato Blight',
+        confidence_score: 0.87,
         recommendations: [
           'Apply copper-based fungicide',
           'Improve air circulation around plants',
@@ -57,8 +75,9 @@ export function AnalysisPage() {
         ],
         severity: 'High'
       })
+    } finally {
       setIsAnalyzing(false)
-    }, 3000)
+    }
   }
 
   return (
@@ -161,23 +180,27 @@ export function AnalysisPage() {
               </div>
               
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <h4 className="font-semibold text-red-900 mb-2">{analysisResult.disease}</h4>
+                <h4 className="font-semibold text-red-900 mb-2">
+                  {analysisResult.disease_detected || analysisResult.disease}
+                </h4>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-red-700">Confidence:</span>
                   <span className="text-sm font-medium text-red-900">
-                    {Math.round(analysisResult.confidence * 100)}%
+                    {Math.round((analysisResult.confidence_score || analysisResult.confidence) * 100)}%
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-red-700">Severity:</span>
-                  <span className="text-sm font-medium text-red-900">{analysisResult.severity}</span>
+                  <span className="text-sm font-medium text-red-900">
+                    {analysisResult.severity || (analysisResult.is_healthy ? 'Healthy' : 'Needs Attention')}
+                  </span>
                 </div>
               </div>
 
               <div>
                 <h5 className="font-medium text-gray-900 mb-2">Recommendations:</h5>
                 <ul className="space-y-1">
-                  {analysisResult.recommendations.map((rec: string, index: number) => (
+                  {(analysisResult.recommendations || []).map((rec: string, index: number) => (
                     <li key={index} className="flex items-start space-x-2 text-sm text-gray-700">
                       <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
                       <span>{rec}</span>
@@ -185,6 +208,13 @@ export function AnalysisPage() {
                   ))}
                 </ul>
               </div>
+              
+              {analysisResult.treatment_advice && (
+                <div>
+                  <h5 className="font-medium text-gray-900 mb-2">Treatment Advice:</h5>
+                  <p className="text-sm text-gray-700">{analysisResult.treatment_advice}</p>
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex items-center justify-center h-64 text-gray-500">

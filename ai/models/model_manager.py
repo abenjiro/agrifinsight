@@ -8,9 +8,9 @@ import logging
 from typing import Dict, Optional, Any
 from pathlib import Path
 
-from .disease_detection import DiseaseDetectionModel
-from .planting_predictor import PlantingPredictor
-from .harvest_predictor import HarvestPredictor
+from disease_detection import DiseaseDetectionModel
+from planting_predictor import PlantingPredictor
+from harvest_predictor import HarvestPredictor
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class ModelManager:
         self.harvest_model = None
         
         # Model paths
-        self.disease_model_path = self.models_dir / "disease_detection.h5"
+        self.disease_model_path = self.models_dir / "crop_disease_model_final.keras"
         self.planting_model_path = self.models_dir / "planting_predictor.pkl"
         self.harvest_model_path = self.models_dir / "harvest_predictor.pkl"
         
@@ -40,8 +40,9 @@ class ModelManager:
             # Load disease detection model
             if self.disease_model_path.exists():
                 self.disease_model = DiseaseDetectionModel(str(self.disease_model_path))
-                logger.info("Disease detection model loaded")
+                logger.info(f"Disease detection model loaded from {self.disease_model_path}")
             else:
+                logger.warning(f"Disease detection model not found at {self.disease_model_path}")
                 self.disease_model = DiseaseDetectionModel()
                 logger.info("Disease detection model initialized (new)")
             

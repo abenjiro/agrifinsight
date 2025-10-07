@@ -1,128 +1,57 @@
 """
-Crop Disease Detection Model
-Uses computer vision to identify plant diseases from images
+Disease Detection Model Definition (Optimized for Apple M1)
 """
 
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import layers
-import numpy as np
-from PIL import Image
-import os
-from typing import Dict, List, Optional
-import logging
-
-logger = logging.getLogger(__name__)
+from tensorflow.keras import layers, models
 
 class DiseaseDetectionModel:
-    """Crop disease detection using CNN"""
-    
-    def __init__(self, model_path: Optional[str] = None, class_names: Optional[List[str]] = None):
-        self.model = None
-        self.class_names = class_names if class_names else []
-        self.confidence_threshold = 0.7
-        
-        if model_path and os.path.exists(model_path):
-            self.load_model(model_path)
-        elif self.class_names:  
-            self.build_model()
-        else:
-            raise ValueError("Either model_path or class_names must be provided.")
+    def __init__(self, class_names):
+        self.class_names = class_names
+        self.img_size = (224, 224)
+        self.model = self._build_model()
 
-    def build_model(self):
-        """Build the CNN model architecture"""
-        model = keras.Sequential([
-            # Input layer
-            layers.Input(shape=(224, 224, 3)),
+    def _build_model(self):
+        # Enable mixed precision for M1 (saves memory + speeds up)
+        keras.mixed_precision.set_global_policy("mixed_float16")
 
-            # Data augmentation
-            layers.RandomFlip("horizontal"),
-            layers.RandomRotation(0.1),
-            layers.RandomZoom(0.1),
+        base_model = keras.applications.MobileNetV2(
+            input_shape=(*self.img_size, 3),
+            include_top=False,
+            weights="imagenet"
+        )
+        base_model.trainable = False  # Freeze feature extractor for now
 
-            # Convolutional layers
-            layers.Conv2D(32, 3, activation='relu'),
-            layers.BatchNormalization(),
-            layers.MaxPooling2D(),
-
-            layers.Conv2D(64, 3, activation='relu'),
-            layers.BatchNormalization(),
-            layers.MaxPooling2D(),
-
-            layers.Conv2D(128, 3, activation='relu'),
-            layers.BatchNormalization(),
-            layers.MaxPooling2D(),
-
-            layers.Conv2D(256, 3, activation='relu'),
-            layers.BatchNormalization(),
-            layers.MaxPooling2D(),
-
-            # Global average pooling
+        model = models.Sequential([
+            keras.Input(shape=(*self.img_size, 3)),
+            layers.Rescaling(1./255),
+            base_model,
             layers.GlobalAveragePooling2D(),
-
-            # Dense layers
-            layers.Dense(512, activation='relu'),
-            layers.Dropout(0.5),
-            layers.Dense(256, activation='relu'),
             layers.Dropout(0.3),
-
-            # Output layer
-            layers.Dense(len(self.class_names), activation='softmax')
+            layers.Dense(len(self.class_names), activation="softmax", dtype="float32")
         ])
 
-        # Compile model
         model.compile(
-            optimizer='adam',
-            loss='sparse_categorical_crossentropy',  # matches dataset labels
-            metrics=['accuracy']
+            optimizer=keras.optimizers.Adam(learning_rate=1e-4),
+            loss="sparse_categorical_crossentropy",
+            metrics=["accuracy"]
         )
 
-        self.model = model
-        logger.info("Disease detection model built successfully")
+        return model
 
-    def preprocess_image(self, image_path: str) -> np.ndarray:
-        """Preprocess image for model input"""
-        image = Image.open(image_path)
-        if image.mode != 'RGB':
-            image = image.convert('RGB')
-        image = image.resize((224, 224))
-        image_array = np.array(image) / 255.0
-        return np.expand_dims(image_array, axis=0)
-
-    def predict(self, image_path: str) -> Dict:
-        """Predict disease from image"""
-        processed_image = self.preprocess_image(image_path)
-        predictions = self.model.predict(processed_image)
-        prediction = predictions[0]
-
-        top_prediction_idx = np.argmax(prediction)
-        confidence = float(prediction[top_prediction_idx])
-        disease = self.class_names[top_prediction_idx]
-
+    def predict_image(self, image_path):
+        """Predict disease class for a single image."""
+        img = keras.utils.load_img(image_path, target_size=self.img_size)
+        img_array = keras.utils.img_to_array(img)
+        img_array = tf.expand_dims(img_array, 0) / 255.0
+        predictions = self.model.predict(img_array)
+        top_idx = tf.argmax(predictions[0]).numpy()
         return {
-            'disease_detected': disease,
-            'confidence_score': confidence,
-            'top_predictions': [
-                {'disease': self.class_names[idx], 'confidence': float(prediction[idx])}
-                for idx in np.argsort(prediction)[-3:][::-1]
-            ],
-            'is_healthy': "healthy" in disease.lower(),
-            'needs_attention': confidence > self.confidence_threshold and "healthy" not in disease.lower()
+            "disease": self.class_names[top_idx],
+            "confidence": float(predictions[0][top_idx]),
+            "all_confidences": {
+                self.class_names[i]: float(pred)
+                for i, pred in enumerate(predictions[0])
+            }
         }
-
-    def save_model(self, model_path: str):
-        """Save the trained model"""
-        if self.model:
-            self.model.save(model_path)
-            logger.info(f"Model saved to {model_path}")
-
-    def load_model(self, model_path: str):
-        """Load a pre-trained model"""
-        self.model = keras.models.load_model(model_path)
-        logger.info(f"Model loaded from {model_path}")
-
-    def get_model_summary(self):
-        """Get model architecture summary"""
-        if self.model:
-            return self.model.summary()
-        return "Model not built yet"

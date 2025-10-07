@@ -13,7 +13,7 @@ from pathlib import Path
 from app.config import settings
 from app.services.ai_service import AIService
 
-router = APIRouter(prefix="/analysis", tags=["image analysis"])
+router = APIRouter(prefix="/api/analysis", tags=["image analysis"])
 
 # Initialize AI service
 ai_service = AIService()

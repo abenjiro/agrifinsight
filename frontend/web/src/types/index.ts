@@ -66,3 +66,5 @@ export interface RegisterData {
   role: 'farmer' | 'analyst'
 }
 
+
+
