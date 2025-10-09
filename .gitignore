@@ -93,7 +93,7 @@ models/*.hdf5
 data/raw/
 data/processed/
 *.csv
-*.json
+# *.json
 *.parquet
 
 # Docker
