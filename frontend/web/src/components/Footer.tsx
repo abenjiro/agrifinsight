@@ -47,12 +47,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link to="/analysis" className="text-gray-300 hover:text-white transition-colors">
-                  Analysis
-                </Link>
-              </li>
-              <li>
-                <Link to="/recommendations" className="text-gray-300 hover:text-white transition-colors">
-                  Recommendations
+                  About Us
                 </Link>
               </li>
             </ul>
