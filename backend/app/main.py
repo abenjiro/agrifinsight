@@ -11,6 +11,8 @@ from dotenv import load_dotenv
 
 # Import routes
 from app.routes import auth, analysis, recommendations, farms
+from app.database import engine
+from app.models.database import Base
 
 # Load environment variables
 load_dotenv()
@@ -23,6 +25,16 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+# Create database tables on startup
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database tables on startup"""
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("Database tables created successfully")
+    except Exception as e:
+        print(f"Error creating database tables: {e}")
 
 # CORS middleware
 app.add_middleware(

@@ -64,6 +64,32 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
+      spacing: {
+        '2.7': '0.675rem',
+        '3.5': '0.875rem',
+        '4.5': '1.125rem',
+        '62.5': '15.625rem',
+        '68.5': '17.125rem',
+        '19.5': '4.875rem',
+      },
+      maxWidth: {
+        '62.5': '15.625rem',
+      },
+      height: {
+        'sidenav': 'calc(100vh - 2rem)',
+        '19.5': '4.875rem',
+      },
+      boxShadow: {
+        'soft-xs': '0 .25rem .375rem -.0625rem hsla(0,0%,8%,.12),0 .125rem .25rem -.0625rem hsla(0,0%,8%,.07)',
+        'soft-sm': '0 .3125rem .625rem 0 rgba(0,0,0,.12)',
+        'soft-md': '0 4px 7px -1px rgba(0,0,0,.11),0 2px 4px -1px rgba(0,0,0,.07)',
+        'soft-lg': '0 .3125rem .625rem 0 rgba(0,0,0,.12)',
+        'soft-xl': '0 20px 27px 0 rgba(0,0,0,.05)',
+        'soft-2xl': '0 .3125rem .625rem -.3125rem rgba(0,0,0,.4)',
+      },
+      zIndex: {
+        '990': '990',
+      },
     },
   },
   plugins: [],

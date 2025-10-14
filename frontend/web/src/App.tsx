@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import { DashboardLayout } from './components/DashboardLayout'
 import { LandingLayout } from './components/LandingLayout'
+import { ProtectedRoute } from './components/ProtectedRoute'
 import { HomePage } from './pages/HomePage'
 import { DashboardPage } from './pages/DashboardPage'
 import { AnalysisPage } from './pages/AnalysisPage'
@@ -28,21 +29,27 @@ function App() {
         </LandingLayout>
       } />
       
-      {/* Dashboard pages with DashboardLayout */}
+      {/* Dashboard pages with DashboardLayout - Protected Routes */}
       <Route path="/dashboard" element={
-        <DashboardLayout>
-          <DashboardPage />
-        </DashboardLayout>
+        <ProtectedRoute>
+          <DashboardLayout>
+            <DashboardPage />
+          </DashboardLayout>
+        </ProtectedRoute>
       } />
       <Route path="/analysis" element={
-        <DashboardLayout>
-          <AnalysisPage />
-        </DashboardLayout>
+        <ProtectedRoute>
+          <DashboardLayout>
+            <AnalysisPage />
+          </DashboardLayout>
+        </ProtectedRoute>
       } />
       <Route path="/recommendations" element={
-        <DashboardLayout>
-          <RecommendationsPage />
-        </DashboardLayout>
+        <ProtectedRoute>
+          <DashboardLayout>
+            <RecommendationsPage />
+          </DashboardLayout>
+        </ProtectedRoute>
       } />
     </Routes>
   )

@@ -16,6 +16,12 @@ sys.path.append(str(ai_models_path))
 # Set the models directory for ModelManager
 MODELS_DIR = str(ai_models_path)
 
+# Optional: Torch inference support
+try:
+    from torch_inference import TorchImageClassifier
+except Exception:
+    TorchImageClassifier = None  # type: ignore
+
 try:
     from simple_model_manager import SimpleModelManager
 except ImportError:
@@ -29,6 +35,7 @@ class AIService:
     
     def __init__(self):
         self.model_manager = None
+        self.torch_classifier = None
         self._initialize_models()
     
     def _initialize_models(self):
@@ -42,9 +49,65 @@ class AIService:
         except Exception as e:
             logger.error(f"Error initializing AI models: {str(e)}")
             logger.warning("AI models not available - using mock responses")
+
+        # Try to initialize Torch model if available
+        try:
+            if TorchImageClassifier is not None:
+                best_model_path = Path(MODELS_DIR) / "best_model.pth"
+                if best_model_path.exists():
+                    # Load model info to get class names
+                    try:
+                        from generic_model import load_model_info
+                        model_info = load_model_info(str(best_model_path))
+                        class_names = model_info.get('class_names', [])
+                        logger.info(f"Found {len(class_names)} classes: {class_names}")
+                    except Exception as info_err:
+                        logger.warning(f"Could not load model info: {info_err}")
+                        class_names = []
+                    
+                    # Use generic model class
+                    self.torch_classifier = TorchImageClassifier(
+                        model_path=str(best_model_path),
+                        model_module="generic_model",
+                        model_class_name="GenericCNN",
+                        class_names=class_names,
+                    )
+                    logger.info(f"Loaded PyTorch model from {best_model_path}")
+                else:
+                    logger.info(f"No PyTorch model found at {best_model_path}")
+            else:
+                logger.info("TorchImageClassifier not available; skipping PyTorch model init")
+        except Exception as e:
+            logger.error(f"Error initializing PyTorch model: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
     
     def analyze_crop_health(self, image_path: str) -> Dict[str, Any]:
         """Analyze crop health from image"""
+        # Prefer PyTorch classifier if available
+        if self.torch_classifier is not None:
+            try:
+                result = self.torch_classifier.predict(image_path)
+                logger.info(f"Crop health analysis (torch) completed for {image_path}")
+                # Normalize result keys to match expected schema
+                top_preds = result.get("top_predictions", [])
+                return {
+                    'disease_detected': result.get('predicted_label'),
+                    'confidence_score': result.get('confidence_score', 0.0),
+                    'disease_type': result.get('predicted_label'),
+                    'severity': 'unknown',
+                    'recommendations': [],
+                    'treatment_advice': '',
+                    'top_predictions': [
+                        {'disease': p.get('label'), 'confidence': p.get('confidence')} for p in top_preds
+                    ],
+                    'is_healthy': False,
+                    'needs_attention': True
+                }
+            except Exception as e:
+                logger.error(f"Error in torch crop health analysis: {str(e)}")
+                # Fallback to TF model if available, else mock
+
         if self.model_manager and self.model_manager.disease_model:
             try:
                 result = self.model_manager.analyze_crop_health(image_path)
@@ -88,14 +151,24 @@ class AIService:
     
     def get_model_status(self) -> Dict[str, Any]:
         """Get status of AI models"""
-        if self.model_manager:
-            return self.model_manager.get_model_status()
-        else:
-            return {
-                'disease_detection': {'available': False, 'status': 'not_loaded'},
-                'planting_predictor': {'available': False, 'status': 'not_loaded'},
-                'harvest_predictor': {'available': False, 'status': 'not_loaded'}
+        status: Dict[str, Any] = {
+            'disease_detection': {'available': False, 'status': 'not_loaded'},
+            'planting_predictor': {'available': False, 'status': 'not_loaded'},
+            'harvest_predictor': {'available': False, 'status': 'not_loaded'},
+            'pytorch_classifier': {
+                'available': self.torch_classifier is not None,
+                'model_path': str((Path(MODELS_DIR) / 'best_model.pth')),
+                'loaded': self.torch_classifier is not None
             }
+        }
+
+        if self.model_manager:
+            try:
+                status.update(self.model_manager.get_model_status())
+            except Exception:
+                pass
+
+        return status
     
     def _get_mock_disease_analysis(self) -> Dict[str, Any]:
         """Mock disease analysis for testing"""

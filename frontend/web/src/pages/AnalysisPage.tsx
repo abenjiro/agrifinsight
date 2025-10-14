@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Upload, Camera, FileImage, AlertCircle, CheckCircle } from 'lucide-react'
+import { Upload, Camera, FileImage, AlertCircle, CheckCircle, Loader } from 'lucide-react'
 
 export function AnalysisPage() {
   const [dragActive, setDragActive] = useState(false)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [analysisResult, setAnalysisResult] = useState<any>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
 
@@ -21,7 +22,7 @@ export function AnalysisPage() {
     e.preventDefault()
     e.stopPropagation()
     setDragActive(false)
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFile(e.dataTransfer.files[0])
     }
@@ -31,6 +32,10 @@ export function AnalysisPage() {
     if (file && file.type.startsWith('image/')) {
       setUploadedFile(file)
       setAnalysisResult(null)
+
+      // Create preview URL
+      const url = URL.createObjectURL(file)
+      setPreviewUrl(url)
     }
   }
 
@@ -44,197 +49,273 @@ export function AnalysisPage() {
     if (!uploadedFile) return
 
     setIsAnalyzing(true)
-    
+
     try {
+      const token = localStorage.getItem('auth_token')
       const formData = new FormData()
-      formData.append('image', uploadedFile)
-      formData.append('farm_id', '1') // Default farm ID for now
-      
+      formData.append('file', uploadedFile)
+      // Optional: Add farm_id if available
+      // formData.append('farm_id', '1')
+
       const response = await fetch('http://localhost:8000/api/analysis/upload', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         body: formData
       })
-      
+
       if (!response.ok) {
-        throw new Error('Analysis failed')
+        const errorData = await response.json().catch(() => ({ detail: 'Analysis failed' }))
+        throw new Error(errorData.detail || 'Analysis failed')
       }
-      
+
       const data = await response.json()
-      setAnalysisResult(data.analysis_result)
-    } catch (error) {
-      console.error('Error analyzing image:', error)
-      // Fallback to mock data if API fails
+      console.log('Analysis response:', data)
+
+      // The backend returns analysis_result object
+      const result = data.analysis_result
+
+      // Transform the AI response to match our UI expectations
       setAnalysisResult({
-        disease_detected: 'Tomato Blight',
-        confidence_score: 0.87,
-        recommendations: [
-          'Apply copper-based fungicide',
-          'Improve air circulation around plants',
-          'Remove affected leaves immediately',
-          'Water at soil level, not on leaves'
-        ],
-        severity: 'High'
+        disease_detected: result.disease_detected || result.disease_type || 'Unknown',
+        confidence_score: result.confidence_score || 0,
+        severity: result.severity || 'Unknown',
+        recommendations: result.recommendations || [],
+        treatment_advice: result.treatment_advice || '',
+        top_predictions: result.top_predictions || [],
+        is_healthy: result.is_healthy || false,
+        needs_attention: result.needs_attention || false
       })
+    } catch (error: any) {
+      console.error('Error analyzing image:', error)
+      alert(`Analysis failed: ${error.message || 'Unknown error'}`)
     } finally {
       setIsAnalyzing(false)
     }
   }
 
+  const resetAnalysis = () => {
+    setUploadedFile(null)
+    setPreviewUrl(null)
+    setAnalysisResult(null)
+  }
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Disease Analysis</h1>
-        <p className="text-gray-600">Upload plant images to detect diseases and get recommendations</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Upload Section */}
-        <div className="card p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Image</h3>
-          
-          <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-              dragActive
-                ? 'border-primary-500 bg-primary-50'
-                : 'border-gray-300 hover:border-gray-400'
-            }`}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-          >
-            {uploadedFile ? (
-              <div className="space-y-4">
-                <FileImage className="w-12 h-12 text-primary-600 mx-auto" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{uploadedFile.name}</p>
-                  <p className="text-sm text-gray-500">
-                    {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
-                </div>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => setUploadedFile(null)}
-                    className="btn btn-outline text-sm"
-                  >
-                    Remove
-                  </button>
-                  <button
-                    onClick={analyzeImage}
-                    disabled={isAnalyzing}
-                    className="btn btn-primary text-sm"
-                  >
-                    {isAnalyzing ? 'Analyzing...' : 'Analyze'}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <Camera className="w-12 h-12 text-gray-400 mx-auto" />
-                <div>
-                  <p className="text-lg font-medium text-gray-900">
-                    Drop your image here
-                  </p>
-                  <p className="text-gray-500">or click to browse</p>
-                </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileInput}
-                  className="hidden"
-                  id="file-upload"
-                />
-                <label
-                  htmlFor="file-upload"
-                  className="btn btn-primary cursor-pointer"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Choose File
-                </label>
-              </div>
-            )}
+    <>
+      {/* Upload Section */}
+      <div className="w-full max-w-full px-3 mb-6 lg:w-7/12 lg:flex-none">
+        <div className="relative flex flex-col min-w-0 break-words bg-white border-0 shadow-soft-xl rounded-2xl bg-clip-border">
+          <div className="p-4 pb-0 mb-0 bg-white border-b-0 rounded-t-2xl">
+            <h6 className="mb-0 font-bold">Upload Image</h6>
+            <p className="leading-normal text-sm">Upload plant images for AI-powered disease detection</p>
           </div>
-
-          <div className="mt-4 text-sm text-gray-500">
-            <p>Supported formats: JPG, PNG, WebP</p>
-            <p>Maximum file size: 10MB</p>
-          </div>
-        </div>
-
-        {/* Analysis Results */}
-        <div className="card p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Analysis Results</h3>
-          
-          {isAnalyzing ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">Analyzing your image...</p>
-              </div>
-            </div>
-          ) : analysisResult ? (
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <AlertCircle className="w-5 h-5 text-red-500" />
-                <span className="font-medium text-gray-900">Disease Detected</span>
-              </div>
-              
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <h4 className="font-semibold text-red-900 mb-2">
-                  {analysisResult.disease_detected || analysisResult.disease}
-                </h4>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-red-700">Confidence:</span>
-                  <span className="text-sm font-medium text-red-900">
-                    {Math.round((analysisResult.confidence_score || analysisResult.confidence) * 100)}%
-                  </span>
+          <div className="flex-auto p-4">
+            <div
+              className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${
+                dragActive
+                  ? 'border-fuchsia-500 bg-fuchsia-50'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+            >
+              {previewUrl ? (
+                <div className="space-y-4">
+                  <img
+                    src={previewUrl}
+                    alt="Preview"
+                    className="max-h-64 mx-auto rounded-lg shadow-md"
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{uploadedFile?.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {uploadedFile && (uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                  <div className="flex justify-center space-x-3">
+                    <button
+                      onClick={resetAnalysis}
+                      className="inline-block px-6 py-2.5 font-bold text-center text-slate-700 uppercase align-middle transition-all bg-transparent border border-solid rounded-lg cursor-pointer border-slate-700 leading-pro text-xs ease-soft-in tracking-tight-soft shadow-soft-md hover:scale-102 hover:shadow-soft-xs active:opacity-85"
+                    >
+                      Remove
+                    </button>
+                    <button
+                      onClick={analyzeImage}
+                      disabled={isAnalyzing}
+                      className="inline-block px-6 py-2.5 font-bold text-center text-white uppercase align-middle transition-all bg-gradient-to-tl from-blue-600 to-cyan-400 rounded-lg cursor-pointer leading-pro text-xs ease-soft-in tracking-tight-soft shadow-soft-md hover:scale-102 hover:shadow-soft-xs active:opacity-85 disabled:opacity-50"
+                    >
+                      {isAnalyzing ? (
+                        <>
+                          <Loader className="w-3 h-3 inline mr-2 animate-spin" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        'Analyze Image'
+                      )}
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-red-700">Severity:</span>
-                  <span className="text-sm font-medium text-red-900">
-                    {analysisResult.severity || (analysisResult.is_healthy ? 'Healthy' : 'Needs Attention')}
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <h5 className="font-medium text-gray-900 mb-2">Recommendations:</h5>
-                <ul className="space-y-1">
-                  {(analysisResult.recommendations || []).map((rec: string, index: number) => (
-                    <li key={index} className="flex items-start space-x-2 text-sm text-gray-700">
-                      <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span>{rec}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              
-              {analysisResult.treatment_advice && (
-                <div>
-                  <h5 className="font-medium text-gray-900 mb-2">Treatment Advice:</h5>
-                  <p className="text-sm text-gray-700">{analysisResult.treatment_advice}</p>
+              ) : (
+                <div className="space-y-4">
+                  <div className="inline-block w-16 h-16 text-center rounded-xl bg-gradient-to-tl from-blue-600 to-cyan-400">
+                    <Camera className="w-8 h-8 text-white relative top-4 left-4" />
+                  </div>
+                  <div>
+                    <p className="text-base font-semibold text-gray-900">
+                      Drop your image here
+                    </p>
+                    <p className="text-sm text-gray-500">or click to browse from your device</p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileInput}
+                    className="hidden"
+                    id="file-upload"
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className="inline-block px-6 py-2.5 font-bold text-center text-white uppercase align-middle transition-all bg-gradient-to-tl from-purple-700 to-pink-500 rounded-lg cursor-pointer leading-pro text-xs ease-soft-in tracking-tight-soft shadow-soft-md hover:scale-102 hover:shadow-soft-xs active:opacity-85"
+                  >
+                    <Upload className="w-3 h-3 inline mr-2" />
+                    Choose File
+                  </label>
                 </div>
               )}
             </div>
-          ) : (
-            <div className="flex items-center justify-center h-64 text-gray-500">
-              <div className="text-center">
-                <Camera className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p>Upload an image to see analysis results</p>
-              </div>
+
+            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-600 mb-1">
+                <strong>Supported formats:</strong> JPG, PNG, WebP
+              </p>
+              <p className="text-xs text-gray-600">
+                <strong>Maximum file size:</strong> 10MB
+              </p>
             </div>
-          )}
+          </div>
+        </div>
+      </div>
+
+      {/* Analysis Results */}
+      <div className="w-full max-w-full px-3 mb-6 lg:w-5/12 lg:flex-none">
+        <div className="relative flex flex-col min-w-0 break-words bg-white border-0 shadow-soft-xl rounded-2xl bg-clip-border">
+          <div className="p-4 pb-0 mb-0 bg-white border-b-0 rounded-t-2xl">
+            <h6 className="mb-0 font-bold">Analysis Results</h6>
+            <p className="leading-normal text-sm">AI-powered disease detection results</p>
+          </div>
+          <div className="flex-auto p-4">
+            {isAnalyzing ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="text-center">
+                  <div className="inline-block w-12 h-12 text-center rounded-xl bg-gradient-to-tl from-purple-700 to-pink-500 mb-4 animate-pulse">
+                    <Loader className="w-6 h-6 text-white relative top-3 left-3 animate-spin" />
+                  </div>
+                  <p className="text-sm font-semibold text-gray-900">Analyzing your image...</p>
+                  <p className="text-xs text-gray-500 mt-1">This may take a few seconds</p>
+                </div>
+              </div>
+            ) : analysisResult ? (
+              <div className="space-y-4">
+                <div className={`flex items-center justify-between p-4 rounded-xl ${
+                  analysisResult.is_healthy
+                    ? 'bg-gradient-to-tl from-green-600 to-lime-400'
+                    : 'bg-gradient-to-tl from-red-600 to-rose-400'
+                }`}>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                      {analysisResult.is_healthy ? (
+                        <CheckCircle className="w-5 h-5 text-white" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 text-white" />
+                      )}
+                    </div>
+                    <div className="text-white">
+                      <p className="text-xs font-semibold opacity-80">
+                        {analysisResult.is_healthy ? 'Crop Status' : 'Disease Detected'}
+                      </p>
+                      <h5 className="font-bold text-base capitalize">
+                        {analysisResult.disease_detected || analysisResult.disease || 'Unknown'}
+                      </h5>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <p className="text-xs text-gray-600 mb-1">Confidence</p>
+                    <p className="text-lg font-bold text-gray-900">
+                      {Math.round((analysisResult.confidence_score || analysisResult.confidence) * 100)}%
+                    </p>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <p className="text-xs text-gray-600 mb-1">Severity</p>
+                    <p className="text-lg font-bold text-red-600">
+                      {analysisResult.severity || 'High'}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <h6 className="font-semibold text-gray-900 mb-2 text-sm">Recommendations:</h6>
+                  <ul className="space-y-2">
+                    {(analysisResult.recommendations || []).map((rec: string, index: number) => (
+                      <li key={index} className="flex items-start space-x-2">
+                        <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <CheckCircle className="w-3 h-3 text-green-600" />
+                        </div>
+                        <span className="text-xs text-gray-700 leading-relaxed">{rec}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {analysisResult.treatment_advice && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h6 className="font-semibold text-blue-900 mb-1 text-xs">Treatment Advice:</h6>
+                    <p className="text-xs text-blue-800">{analysisResult.treatment_advice}</p>
+                  </div>
+                )}
+
+                <button className="inline-block w-full px-6 py-2.5 font-bold text-center text-white uppercase align-middle transition-all bg-gradient-to-tl from-green-600 to-lime-400 rounded-lg cursor-pointer leading-pro text-xs ease-soft-in tracking-tight-soft shadow-soft-md hover:scale-102 hover:shadow-soft-xs active:opacity-85">
+                  Save Analysis
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center py-16">
+                <div className="text-center text-gray-400">
+                  <div className="inline-block w-16 h-16 text-center rounded-xl bg-gray-100 mb-4">
+                    <Camera className="w-8 h-8 text-gray-300 relative top-4 left-4" />
+                  </div>
+                  <p className="text-sm font-medium">No analysis yet</p>
+                  <p className="text-xs mt-1">Upload an image to get started</p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Analysis History */}
-      <div className="card p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Analysis</h3>
-        <div className="text-center py-8 text-gray-500">
-          <p>No recent analysis found</p>
+      <div className="w-full max-w-full px-3">
+        <div className="relative flex flex-col min-w-0 break-words bg-white border-0 shadow-soft-xl rounded-2xl bg-clip-border">
+          <div className="p-4 pb-0 mb-0 bg-white border-b-0 rounded-t-2xl">
+            <h6 className="mb-0 font-bold">Recent Analysis History</h6>
+            <p className="leading-normal text-sm">Your previous disease detection results</p>
+          </div>
+          <div className="flex-auto p-4">
+            <div className="text-center py-12">
+              <div className="inline-block w-16 h-16 text-center rounded-xl bg-gray-100 mb-4">
+                <FileImage className="w-8 h-8 text-gray-300 relative top-4 left-4" />
+              </div>
+              <p className="text-sm font-medium text-gray-500">No recent analysis found</p>
+              <p className="text-xs text-gray-400 mt-1">Your analysis history will appear here</p>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
-

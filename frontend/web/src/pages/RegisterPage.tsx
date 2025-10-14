@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react'
 
@@ -15,6 +15,14 @@ export function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
+  // Redirect if already logged in
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token')
+    if (token) {
+      navigate('/dashboard')
+    }
+  }, [navigate])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
@@ -24,7 +32,7 @@ export function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (formData.password !== formData.confirmPassword) {
       alert('Passwords do not match')
       return
@@ -32,12 +40,41 @@ export function RegisterPage() {
 
     setLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      localStorage.setItem('auth_token', 'mock-token')
-      setLoading(false)
+    try {
+      // Call the actual API
+      const response = await fetch('http://localhost:8000/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          phone: null // You can add phone field to the form if needed
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Registration failed')
+      }
+
+      // Store the access token
+      localStorage.setItem('auth_token', data.access_token)
+      localStorage.setItem('refresh_token', data.refresh_token)
+
+      // Store user data
+      localStorage.setItem('user', JSON.stringify(data.user))
+
+      // Navigate to dashboard
       navigate('/dashboard')
-    }, 1000)
+    } catch (error: any) {
+      console.error('Registration error:', error)
+      alert(error.message || 'Registration failed. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -225,6 +262,7 @@ export function RegisterPage() {
     </div>
   )
 }
+
 
 
 

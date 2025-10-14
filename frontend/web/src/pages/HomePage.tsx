@@ -43,7 +43,7 @@ export function HomePage() {
     // Highlight country
     const highlightCountry = (id: string) => {
       polygonSeries.mapPolygons.each((polygon) => {
-        const countryId = polygon.dataItem?.get("id");
+        const countryId = polygon.dataItem?.dataContext ? (polygon.dataItem.dataContext as any).id : null;
         polygon.setAll({
           fill:
             countryId === id ? am5.color(0xff5733) : am5.color(0xcccccc),
@@ -133,7 +133,7 @@ export function HomePage() {
             />
             <div
               id="factbox"
-              className="mt-4 text-center text-lg font-semibold text-gray-800"
+              className="mt-4 text-center text-lg font-semibold text-gray-800 min-h-[60px] flex items-center justify-center"
             ></div>
           </div>
 
@@ -244,3 +244,4 @@ export function HomePage() {
     </div>
   );
 }
+

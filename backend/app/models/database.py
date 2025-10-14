@@ -13,7 +13,7 @@ Base = declarative_base()
 class User(Base):
     """User model"""
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
     phone = Column(String(20), unique=True, index=True)
@@ -21,9 +21,10 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     # Relationships
     farms = relationship("Farm", back_populates="owner")
+    crop_images = relationship("CropImage", back_populates="user")
     analysis_results = relationship("AnalysisResult", back_populates="user")
 
 class Farm(Base):
@@ -79,7 +80,7 @@ class CropImage(Base):
     # Relationships
     farm = relationship("Farm", back_populates="crop_images")
     field = relationship("Field", back_populates="crop_images")
-    user = relationship("User", back_populates="analysis_results")
+    user = relationship("User", back_populates="crop_images")
     analysis_results = relationship("AnalysisResult", back_populates="image")
 
 class AnalysisResult(Base):

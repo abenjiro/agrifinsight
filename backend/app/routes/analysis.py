@@ -78,6 +78,14 @@ async def upload_image(
             file_path.unlink()
         raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
 
+@router.get("/model-status")
+async def model_status():
+    """Return AI model load/status information"""
+    try:
+        return ai_service.get_model_status()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving model status: {str(e)}")
+
 @router.get("/{image_id}/status")
 async def get_analysis_status(image_id: int):
     """Get analysis status for uploaded image"""

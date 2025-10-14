@@ -2,21 +2,28 @@
 Authentication routes
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from typing import Optional
-from jose import jwt
+from jose import jwt, JWTError
 from passlib.context import CryptContext
 
 from app.models.database import User
+from app.database import get_db
 from app.config import settings
+from app.schemas import UserCreate, User as UserSchema, Token
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 # Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__rounds=12,
+    bcrypt__ident="2b"
+)
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
@@ -27,7 +34,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def get_password_hash(password: str) -> str:
     """Hash a password"""
-    return pwd_context.hash(password)
+    # Truncate password to 72 bytes for bcrypt compatibility
+    password_bytes = password.encode('utf-8')[:72].decode('utf-8', errors='ignore')
+    return pwd_context.hash(password_bytes)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """Create JWT access token"""
@@ -36,7 +45,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
-    
+
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
     return encoded_jwt
@@ -49,61 +58,188 @@ def create_refresh_token(data: dict):
     encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
     return encoded_jwt
 
-@router.post("/register")
+async def get_current_user_from_token(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+) -> User:
+    """Get current user from JWT token"""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    user = db.query(User).filter(User.email == email).first()
+    if user is None:
+        raise credentials_exception
+
+    return user
+
+@router.post("/register", response_model=dict)
 async def register(
-    email: str,
-    password: str,
-    phone: Optional[str] = None
+    user_data: UserCreate,
+    db: Session = Depends(get_db)
 ):
     """Register a new user"""
-    # TODO: Add database session dependency
-    # TODO: Check if user already exists
-    # TODO: Create new user
-    # TODO: Return user data and tokens
-    
+    # Check if user already exists
+    existing_user = db.query(User).filter(User.email == user_data.email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered"
+        )
+
+    # Check if phone is already registered
+    if user_data.phone:
+        existing_phone = db.query(User).filter(User.phone == user_data.phone).first()
+        if existing_phone:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Phone number already registered"
+            )
+
+    # Create new user
+    hashed_password = get_password_hash(user_data.password)
+    new_user = User(
+        email=user_data.email,
+        phone=user_data.phone,
+        password_hash=hashed_password,
+        is_active=True
+    )
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    # Create tokens
+    access_token = create_access_token(data={"sub": new_user.email})
+    refresh_token = create_refresh_token(data={"sub": new_user.email})
+
     return {
-        "message": "User registration endpoint - to be implemented",
-        "email": email,
-        "phone": phone
+        "user": {
+            "id": new_user.id,
+            "email": new_user.email,
+            "phone": new_user.phone,
+            "is_active": new_user.is_active,
+            "created_at": new_user.created_at
+        },
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer"
     }
 
-@router.post("/login")
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+@router.post("/login", response_model=dict)
+async def login(
+    email: str = Body(...),
+    password: str = Body(...),
+    db: Session = Depends(get_db)
+):
     """Login user and return access token"""
-    # TODO: Add database session dependency
-    # TODO: Verify user credentials
-    # TODO: Return access and refresh tokens
-    
+    # Find user by email
+    user = db.query(User).filter(User.email == email).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Verify password
+    if not verify_password(password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Check if user is active
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Inactive user account"
+        )
+
+    # Create tokens
+    access_token = create_access_token(data={"sub": user.email})
+    refresh_token = create_refresh_token(data={"sub": user.email})
+
     return {
-        "message": "User login endpoint - to be implemented",
-        "username": form_data.username
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "phone": user.phone,
+            "is_active": user.is_active,
+            "created_at": user.created_at
+        },
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer"
     }
 
 @router.post("/refresh")
-async def refresh_token(refresh_token: str):
+async def refresh_token_endpoint(
+    refresh_token: str = Body(..., embed=True),
+    db: Session = Depends(get_db)
+):
     """Refresh access token using refresh token"""
-    # TODO: Verify refresh token
-    # TODO: Generate new access token
-    
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        payload = jwt.decode(refresh_token, settings.secret_key, algorithms=[settings.algorithm])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    user = db.query(User).filter(User.email == email).first()
+    if user is None or not user.is_active:
+        raise credentials_exception
+
+    # Generate new access token
+    new_access_token = create_access_token(data={"sub": user.email})
+
     return {
-        "message": "Token refresh endpoint - to be implemented"
+        "access_token": new_access_token,
+        "token_type": "bearer"
     }
 
 @router.post("/logout")
-async def logout(token: str = Depends(oauth2_scheme)):
+async def logout(current_user: User = Depends(get_current_user_from_token)):
     """Logout user and invalidate token"""
-    # TODO: Add token to blacklist
-    # TODO: Return success message
-    
+    # In a production environment, you would add the token to a blacklist
+    # For now, the client will handle token removal
     return {
-        "message": "User logout endpoint - to be implemented"
+        "message": "Successfully logged out",
+        "success": True
     }
 
-@router.get("/me")
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+@router.get("/me", response_model=UserSchema)
+async def get_current_user(current_user: User = Depends(get_current_user_from_token)):
     """Get current user information"""
-    # TODO: Verify token and return user data
-    
+    return current_user
+
+@router.get("/verify")
+async def verify_token(current_user: User = Depends(get_current_user_from_token)):
+    """Verify if the token is valid and user is authenticated"""
     return {
-        "message": "Current user endpoint - to be implemented"
+        "authenticated": True,
+        "user": {
+            "id": current_user.id,
+            "email": current_user.email,
+            "is_active": current_user.is_active
+        }
     }

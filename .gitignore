@@ -84,10 +84,23 @@ logs/
 *.joblib
 *.h5
 *.hdf5
+*.pth
+*.pt
+*.onnx
+*.pb
+*.tflite
+*.keras
 models/*.pkl
 models/*.joblib
 models/*.h5
 models/*.hdf5
+models/*.pth
+models/*.pt
+ai/models/*.pth
+ai/models/*.pt
+ai/models/*.keras
+ai/models/best_model.pth
+ai/models/crop_disease_model_final.keras
 
 # Data files
 data/raw/
@@ -102,3 +115,7 @@ data/processed/
 # Temporary files
 tmp/
 temp/
+
+# Uploads
+backend/uploads/
+uploads/
