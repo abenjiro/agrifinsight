@@ -3,7 +3,10 @@ import { DashboardLayout } from './components/DashboardLayout'
 import { LandingLayout } from './components/LandingLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { HomePage } from './pages/HomePage'
+import { AboutUsPage } from './pages/AboutUsPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { FarmsPage } from './pages/FarmsPage'
+import { AIFeaturesPage } from './pages/AIFeaturesPage'
 import { AnalysisPage } from './pages/AnalysisPage'
 import { RecommendationsPage } from './pages/RecommendationsPage'
 import { LoginPage } from './pages/LoginPage'
@@ -18,6 +21,11 @@ function App() {
           <HomePage />
         </LandingLayout>
       } />
+      <Route path="/ai-features" element={
+        <LandingLayout>
+          <AIFeaturesPage />
+        </LandingLayout>
+      } />
       <Route path="/login" element={
         <LandingLayout>
           <LoginPage />
@@ -28,12 +36,24 @@ function App() {
           <RegisterPage />
         </LandingLayout>
       } />
-      
+      <Route path="/about" element={
+        <LandingLayout>
+          <AboutUsPage />
+        </LandingLayout>
+      } />
+
       {/* Dashboard pages with DashboardLayout - Protected Routes */}
       <Route path="/dashboard" element={
         <ProtectedRoute>
           <DashboardLayout>
             <DashboardPage />
+          </DashboardLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/farms" element={
+        <ProtectedRoute>
+          <DashboardLayout>
+            <FarmsPage />
           </DashboardLayout>
         </ProtectedRoute>
       } />

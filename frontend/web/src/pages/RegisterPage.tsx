@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react'
+import { showError, showSuccess } from '../utils/sweetalert'
 
 export function RegisterPage() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     password: '',
     confirmPassword: '',
     role: 'farmer' as 'farmer' | 'analyst'
@@ -34,7 +36,7 @@ export function RegisterPage() {
     e.preventDefault()
 
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match')
+      showError('Passwords do not match', 'Validation Error')
       return
     }
 
@@ -50,7 +52,8 @@ export function RegisterPage() {
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
-          phone: null // You can add phone field to the form if needed
+          phone: formData.phone || null,
+          role: formData.role
         }),
       })
 
@@ -67,11 +70,12 @@ export function RegisterPage() {
       // Store user data
       localStorage.setItem('user', JSON.stringify(data.user))
 
-      // Navigate to dashboard
+      // Show success message and navigate
+      await showSuccess('Your account has been created successfully! Welcome to AgriFinSight!', 'Registration Successful')
       navigate('/dashboard')
     } catch (error: any) {
       console.error('Registration error:', error)
-      alert(error.message || 'Registration failed. Please try again.')
+      showError(error.message || 'Registration failed. Please try again.', 'Registration Failed')
     } finally {
       setLoading(false)
     }
@@ -140,6 +144,27 @@ export function RegisterPage() {
                   className="input pl-10"
                   placeholder="Enter your email"
                   value={formData.email}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                Phone Number
+              </label>
+              <div className="mt-1 relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Phone className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  autoComplete="tel"
+                  className="input pl-10"
+                  placeholder="Enter your phone number"
+                  value={formData.phone}
                   onChange={handleChange}
                 />
               </div>

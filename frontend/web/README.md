@@ -13,7 +13,7 @@ A modern React web application for the AgriFinSight smart agriculture platform.
 
 ## Tech Stack
 
-- **React 18** with TypeScript
+- **React 19** with TypeScript
 - **Vite** for fast development and building
 - **Tailwind CSS** for styling
 - **React Router** for navigation
@@ -24,7 +24,7 @@ A modern React web application for the AgriFinSight smart agriculture platform.
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 19+ 
 - npm or yarn
 
 ### Installation

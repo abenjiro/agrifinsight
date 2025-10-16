@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { showError, showSuccess } from '../utils/sweetalert';
 
 export function LoginPage() {
   const [formData, setFormData] = useState({
@@ -56,11 +57,12 @@ export function LoginPage() {
       // Store user data
       localStorage.setItem('user', JSON.stringify(data.user));
 
-      // Navigate to dashboard
+      // Show success message and navigate
+      await showSuccess('Welcome back!', 'Login Successful');
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Login error:', error);
-      alert(error.message || 'Login failed. Please check your credentials.');
+      showError(error.message || 'Login failed. Please check your credentials.', 'Login Failed');
     } finally {
       setLoading(false);
     }

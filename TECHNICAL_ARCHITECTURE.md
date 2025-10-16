@@ -76,7 +76,7 @@ AgriFinSight is a cloud-native, AI-powered agricultural assistant designed for s
 
 ### Frontend
 - **Mobile**: React Native with Expo
-- **Web**: React 18+ with TypeScript
+- **Web**: React 19+ with TypeScript
 - **State Management**: Redux Toolkit / Zustand
 - **UI Framework**: NativeBase / Material-UI
 - **Charts**: Chart.js / D3.js

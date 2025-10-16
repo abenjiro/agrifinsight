@@ -1,90 +1,149 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import {
-  BarChart3,
   Camera,
   TrendingUp,
   AlertTriangle,
   CheckCircle,
   Upload,
-  ArrowUp,
-  ArrowDown
+  Sprout,
+  MapPin,
+  Plus,
+  ArrowRight
 } from 'lucide-react'
-import type { Farm, AnalysisResult } from '../types'
+
+interface Farm {
+  id: number
+  name: string
+  address?: string
+  latitude?: number
+  longitude?: number
+  size?: number
+  size_unit?: string
+  soil_type?: string
+  climate_zone?: string
+  avg_temperature?: number
+  country?: string
+  region?: string
+  created_at: string
+}
+
+interface DashboardStats {
+  totalFarms: number
+  totalSize: number
+  analysisCount: number
+  issuesDetected: number
+  healthyPercentage: number
+}
 
 export function DashboardPage() {
   const [farms, setFarms] = useState<Farm[]>([])
-  const [recentAnalysis, setRecentAnalysis] = useState<AnalysisResult[]>([])
+  const [stats, setStats] = useState<DashboardStats>({
+    totalFarms: 0,
+    totalSize: 0,
+    analysisCount: 0,
+    issuesDetected: 0,
+    healthyPercentage: 0
+  })
   const [loading, setLoading] = useState(true)
+  const [userName, setUserName] = useState('')
 
   useEffect(() => {
-    // Simulate loading data
-    setTimeout(() => {
-      setFarms([
-        {
-          id: '1',
-          name: 'North Field',
-          location: 'Iowa, USA',
-          size: 50,
-          crop_type: 'Corn',
-          soil_type: 'Loam',
-          user_id: '1',
-          created_at: '2024-01-01',
-          updated_at: '2024-01-01'
-        },
-        {
-          id: '2',
-          name: 'South Field',
-          location: 'Iowa, USA',
-          size: 30,
-          crop_type: 'Soybean',
-          soil_type: 'Clay',
-          user_id: '1',
-          created_at: '2024-01-01',
-          updated_at: '2024-01-01'
-        }
-      ])
-      setRecentAnalysis([
-        {
-          id: '1',
-          farm_id: '1',
-          image_url: '/api/placeholder/300/200',
-          disease_detected: 'Corn Rust',
-          confidence: 0.85,
-          recommendations: ['Apply fungicide', 'Improve air circulation'],
-          created_at: '2024-01-15'
-        }
-      ])
-      setLoading(false)
-    }, 1000)
+    fetchDashboardData()
   }, [])
+
+  const fetchDashboardData = async () => {
+    try {
+      const token = localStorage.getItem('auth_token')
+      const user = JSON.parse(localStorage.getItem('user') || '{}')
+      setUserName(user.email?.split('@')[0] || 'User')
+
+      // Fetch farms
+      const farmsResponse = await fetch('http://localhost:8000/farms/', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (farmsResponse.ok) {
+        const farmsData = await farmsResponse.json()
+        setFarms(farmsData)
+
+        // Calculate stats
+        const totalSize = farmsData.reduce((sum: number, farm: Farm) =>
+          sum + (farm.size || 0), 0
+        )
+
+        setStats({
+          totalFarms: farmsData.length,
+          totalSize: Math.round(totalSize),
+          analysisCount: 0, // TODO: Fetch from analysis endpoint
+          issuesDetected: 0, // TODO: Fetch from analysis endpoint
+          healthyPercentage: 95 // TODO: Calculate from analysis data
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   if (loading) {
     return (
-      <div className="w-full flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>
+      <div className="w-full flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
       </div>
     )
   }
 
   return (
     <>
+      {/* Welcome Banner */}
+      <div className="w-full max-w-full px-3 mb-6">
+        <div className="relative flex flex-col min-w-0 break-words bg-gradient-to-r from-green-600 to-blue-600 shadow-soft-xl rounded-2xl bg-clip-border">
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h5 className="mb-2 font-bold text-white text-2xl">
+                  Welcome back, {userName}! 👋
+                </h5>
+                <p className="text-white/90 text-sm">
+                  Here's what's happening with your farms today
+                </p>
+              </div>
+              <Link
+                to="/ai-features"
+                className="hidden md:inline-flex items-center px-6 py-3 font-bold text-center text-green-600 uppercase align-middle transition-all bg-white rounded-lg cursor-pointer leading-pro text-xs ease-soft-in tracking-tight-soft shadow-soft-md hover:scale-102"
+              >
+                Explore AI Features
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Stats Cards Row */}
       <div className="w-full max-w-full px-3 mb-6 sm:w-1/2 sm:flex-none xl:mb-0 xl:w-1/4">
-        <div className="relative flex flex-col min-w-0 break-words bg-white shadow-soft-xl rounded-2xl bg-clip-border">
+        <div className="relative flex flex-col min-w-0 break-words bg-white shadow-soft-xl rounded-2xl bg-clip-border hover:shadow-soft-2xl transition">
           <div className="flex-auto p-4">
             <div className="flex flex-row -mx-3">
               <div className="flex-none w-2/3 max-w-full px-3">
                 <div>
-                  <p className="mb-0 font-sans font-semibold leading-normal text-sm">Total Farms</p>
-                  <h5 className="mb-0 font-bold">
-                    {farms.length}
-                    <span className="leading-normal text-sm font-weight-bolder text-lime-500"> +12%</span>
+                  <p className="mb-0 font-sans font-semibold leading-normal text-sm text-gray-600">Total Farms</p>
+                  <h5 className="mb-0 font-bold text-2xl">
+                    {stats.totalFarms}
                   </h5>
+                  <p className="text-xs text-gray-500 mt-1">{stats.totalSize} acres total</p>
                 </div>
               </div>
               <div className="px-3 text-right basis-1/3">
-                <div className="inline-block w-12 h-12 text-center rounded-lg bg-gradient-to-tl from-purple-700 to-pink-500">
-                  <BarChart3 className="w-6 h-6 text-white relative top-3.5 left-3" />
+                <div className="inline-block w-12 h-12 text-center rounded-lg bg-gradient-to-tl from-green-600 to-lime-400 shadow-lg">
+                  <Sprout className="w-6 h-6 text-white relative top-3.5 left-3" />
                 </div>
               </div>
             </div>
@@ -93,20 +152,20 @@ export function DashboardPage() {
       </div>
 
       <div className="w-full max-w-full px-3 mb-6 sm:w-1/2 sm:flex-none xl:mb-0 xl:w-1/4">
-        <div className="relative flex flex-col min-w-0 break-words bg-white shadow-soft-xl rounded-2xl bg-clip-border">
+        <div className="relative flex flex-col min-w-0 break-words bg-white shadow-soft-xl rounded-2xl bg-clip-border hover:shadow-soft-2xl transition">
           <div className="flex-auto p-4">
             <div className="flex flex-row -mx-3">
               <div className="flex-none w-2/3 max-w-full px-3">
                 <div>
-                  <p className="mb-0 font-sans font-semibold leading-normal text-sm">Analysis Today</p>
-                  <h5 className="mb-0 font-bold">
-                    3
-                    <span className="leading-normal text-sm font-weight-bolder text-lime-500"> +5%</span>
+                  <p className="mb-0 font-sans font-semibold leading-normal text-sm text-gray-600">Analysis Done</p>
+                  <h5 className="mb-0 font-bold text-2xl">
+                    {stats.analysisCount}
                   </h5>
+                  <p className="text-xs text-gray-500 mt-1">All time</p>
                 </div>
               </div>
               <div className="px-3 text-right basis-1/3">
-                <div className="inline-block w-12 h-12 text-center rounded-lg bg-gradient-to-tl from-blue-600 to-cyan-400">
+                <div className="inline-block w-12 h-12 text-center rounded-lg bg-gradient-to-tl from-blue-600 to-cyan-400 shadow-lg">
                   <Camera className="w-6 h-6 text-white relative top-3.5 left-3" />
                 </div>
               </div>
@@ -116,20 +175,20 @@ export function DashboardPage() {
       </div>
 
       <div className="w-full max-w-full px-3 mb-6 sm:w-1/2 sm:flex-none xl:mb-0 xl:w-1/4">
-        <div className="relative flex flex-col min-w-0 break-words bg-white shadow-soft-xl rounded-2xl bg-clip-border">
+        <div className="relative flex flex-col min-w-0 break-words bg-white shadow-soft-xl rounded-2xl bg-clip-border hover:shadow-soft-2xl transition">
           <div className="flex-auto p-4">
             <div className="flex flex-row -mx-3">
               <div className="flex-none w-2/3 max-w-full px-3">
                 <div>
-                  <p className="mb-0 font-sans font-semibold leading-normal text-sm">Issues Detected</p>
-                  <h5 className="mb-0 font-bold">
-                    1
-                    <span className="leading-normal text-sm font-weight-bolder text-red-600"> -2%</span>
+                  <p className="mb-0 font-sans font-semibold leading-normal text-sm text-gray-600">Issues Detected</p>
+                  <h5 className="mb-0 font-bold text-2xl">
+                    {stats.issuesDetected}
                   </h5>
+                  <p className="text-xs text-green-600 mt-1">All resolved</p>
                 </div>
               </div>
               <div className="px-3 text-right basis-1/3">
-                <div className="inline-block w-12 h-12 text-center rounded-lg bg-gradient-to-tl from-red-600 to-rose-400">
+                <div className="inline-block w-12 h-12 text-center rounded-lg bg-gradient-to-tl from-amber-600 to-yellow-400 shadow-lg">
                   <AlertTriangle className="w-6 h-6 text-white relative top-3.5 left-3" />
                 </div>
               </div>
@@ -139,20 +198,20 @@ export function DashboardPage() {
       </div>
 
       <div className="w-full max-w-full px-3 sm:w-1/2 sm:flex-none xl:w-1/4">
-        <div className="relative flex flex-col min-w-0 break-words bg-white shadow-soft-xl rounded-2xl bg-clip-border">
+        <div className="relative flex flex-col min-w-0 break-words bg-white shadow-soft-xl rounded-2xl bg-clip-border hover:shadow-soft-2xl transition">
           <div className="flex-auto p-4">
             <div className="flex flex-row -mx-3">
               <div className="flex-none w-2/3 max-w-full px-3">
                 <div>
-                  <p className="mb-0 font-sans font-semibold leading-normal text-sm">Healthy Crops</p>
-                  <h5 className="mb-0 font-bold">
-                    85%
-                    <span className="leading-normal text-sm font-weight-bolder text-lime-500"> +3%</span>
+                  <p className="mb-0 font-sans font-semibold leading-normal text-sm text-gray-600">Farm Health</p>
+                  <h5 className="mb-0 font-bold text-2xl">
+                    {stats.healthyPercentage}%
                   </h5>
+                  <p className="text-xs text-green-600 mt-1">Excellent status</p>
                 </div>
               </div>
               <div className="px-3 text-right basis-1/3">
-                <div className="inline-block w-12 h-12 text-center rounded-lg bg-gradient-to-tl from-green-600 to-lime-400">
+                <div className="inline-block w-12 h-12 text-center rounded-lg bg-gradient-to-tl from-emerald-600 to-teal-400 shadow-lg">
                   <CheckCircle className="w-6 h-6 text-white relative top-3.5 left-3" />
                 </div>
               </div>
@@ -165,32 +224,68 @@ export function DashboardPage() {
       <div className="w-full max-w-full px-3 mt-6 md:w-7/12 md:flex-none">
         <div className="relative flex flex-col min-w-0 break-words bg-white border-0 shadow-soft-xl rounded-2xl bg-clip-border">
           <div className="p-4 pb-0 mb-0 bg-white border-b-0 rounded-t-2xl">
-            <h6 className="mb-0 font-bold">Your Farms</h6>
+            <div className="flex items-center justify-between">
+              <h6 className="mb-0 font-bold">Your Farms</h6>
+              <Link
+                to="/farms"
+                className="text-xs font-semibold text-green-600 hover:text-green-700 transition"
+              >
+                View All
+              </Link>
+            </div>
           </div>
           <div className="flex-auto p-4">
-            <div className="space-y-4">
-              {farms.map((farm) => (
-                <div
-                  key={farm.id}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:shadow-soft-xs transition-all"
-                >
-                  <div className="flex items-center">
-                    <div className="w-12 h-12 bg-gradient-to-tl from-purple-700 to-pink-500 rounded-lg flex items-center justify-center text-white font-bold mr-4">
-                      {farm.name.charAt(0)}
+            {farms.length > 0 ? (
+              <div className="space-y-4">
+                {farms.slice(0, 5).map((farm) => (
+                  <div
+                    key={farm.id}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:shadow-soft-xs transition-all cursor-pointer"
+                  >
+                    <div className="flex items-center flex-1">
+                      <div className="w-12 h-12 bg-gradient-to-tl from-purple-700 to-pink-500 rounded-lg flex items-center justify-center text-white font-bold mr-4">
+                        {farm.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1">
+                        <h6 className="mb-0 leading-normal text-sm font-semibold">{farm.name}</h6>
+                        <p className="mb-0 leading-tight text-xs text-slate-400">
+                          <MapPin className="w-3 h-3 inline mr-1" />
+                          {farm.address || farm.region || farm.country || 'Location not set'}
+                          {farm.size && (
+                            <>
+                              {' '} • {farm.size} {farm.size_unit || 'acres'}
+                            </>
+                          )}
+                          {farm.soil_type && (
+                            <>
+                              {' '} • {farm.soil_type}
+                            </>
+                          )}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h6 className="mb-0 leading-normal text-sm font-semibold">{farm.name}</h6>
-                      <p className="mb-0 leading-tight text-xs text-slate-400">
-                        {farm.location} • {farm.size} acres • {farm.crop_type}
-                      </p>
-                    </div>
+                    <span className="inline-block px-2.5 py-1 text-xs font-semibold text-center text-green-600 bg-green-200 rounded-lg">
+                      Active
+                    </span>
                   </div>
-                  <span className="inline-block px-2.5 py-1 text-xs font-semibold text-center text-green-600 bg-green-200 rounded-lg">
-                    Active
-                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="inline-block w-16 h-16 text-center rounded-xl bg-gray-100 mb-4">
+                  <Sprout className="w-8 h-8 text-gray-300 relative top-4 left-4" />
                 </div>
-              ))}
-            </div>
+                <p className="text-sm font-medium text-gray-500 mb-2">No farms yet</p>
+                <p className="text-xs text-gray-400 mb-4">Add your first farm to get started</p>
+                <Link
+                  to="/farms"
+                  className="inline-block px-6 py-2.5 font-bold text-center text-white uppercase align-middle transition-all bg-gradient-to-tl from-green-600 to-lime-400 rounded-lg cursor-pointer leading-pro text-xs ease-soft-in tracking-tight-soft shadow-soft-md hover:scale-102 hover:shadow-soft-xs active:opacity-85"
+                >
+                  <Plus className="w-3 h-3 inline mr-2" />
+                  Add Farm
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -199,28 +294,30 @@ export function DashboardPage() {
       <div className="w-full max-w-full px-3 mt-6 md:w-5/12 md:flex-none">
         <div className="relative flex flex-col min-w-0 break-words bg-white border-0 shadow-soft-xl rounded-2xl bg-clip-border">
           <div className="p-4 pb-0 mb-0 bg-white border-b-0 rounded-t-2xl">
-            <h6 className="mb-0 font-bold">Recent Analysis</h6>
+            <div className="flex items-center justify-between">
+              <h6 className="mb-0 font-bold">Recent Analysis</h6>
+              <Link
+                to="/analysis"
+                className="text-xs font-semibold text-green-600 hover:text-green-700 transition"
+              >
+                View All
+              </Link>
+            </div>
           </div>
           <div className="flex-auto p-4">
-            <div className="space-y-4">
-              {recentAnalysis.map((analysis) => (
-                <div key={analysis.id} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-gradient-to-tl from-red-600 to-rose-400 rounded-lg flex items-center justify-center">
-                      <AlertTriangle className="w-6 h-6 text-white" />
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900">{analysis.disease_detected}</p>
-                    <p className="text-xs text-gray-500">
-                      Confidence: {Math.round(analysis.confidence * 100)}%
-                    </p>
-                  </div>
-                  <span className="inline-block px-2.5 py-1 text-xs font-semibold text-red-600 bg-red-200 rounded-lg">
-                    Disease
-                  </span>
-                </div>
-              ))}
+            <div className="text-center py-12">
+              <div className="inline-block w-16 h-16 text-center rounded-xl bg-gray-100 mb-4">
+                <Camera className="w-8 h-8 text-gray-300 relative top-4 left-4" />
+              </div>
+              <p className="text-sm font-medium text-gray-500 mb-2">No analysis yet</p>
+              <p className="text-xs text-gray-400 mb-4">Upload crop images to get AI-powered insights</p>
+              <Link
+                to="/analysis"
+                className="inline-block px-6 py-2.5 font-bold text-center text-white uppercase align-middle transition-all bg-gradient-to-tl from-blue-600 to-cyan-400 rounded-lg cursor-pointer leading-pro text-xs ease-soft-in tracking-tight-soft shadow-soft-md hover:scale-102 hover:shadow-soft-xs active:opacity-85"
+              >
+                <Upload className="w-3 h-3 inline mr-2" />
+                Start Analysis
+              </Link>
             </div>
           </div>
         </div>
@@ -234,18 +331,27 @@ export function DashboardPage() {
           </div>
           <div className="flex-auto p-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <button className="inline-block px-6 py-3 font-bold text-center text-white uppercase align-middle transition-all bg-gradient-to-tl from-purple-700 to-pink-500 rounded-lg cursor-pointer leading-pro text-xs ease-soft-in tracking-tight-soft shadow-soft-md bg-150 bg-x-25 hover:scale-102 hover:shadow-soft-xs active:opacity-85">
+              <Link
+                to="/analysis"
+                className="inline-block px-6 py-3 font-bold text-center text-white uppercase align-middle transition-all bg-gradient-to-tl from-purple-700 to-pink-500 rounded-lg cursor-pointer leading-pro text-xs ease-soft-in tracking-tight-soft shadow-soft-md bg-150 bg-x-25 hover:scale-102 hover:shadow-soft-xs active:opacity-85"
+              >
                 <Upload className="w-4 h-4 inline mr-2" />
                 Upload Image
-              </button>
-              <button className="inline-block px-6 py-3 font-bold text-center text-slate-700 uppercase align-middle transition-all bg-transparent border border-solid rounded-lg cursor-pointer border-slate-700 leading-pro text-xs ease-soft-in tracking-tight-soft shadow-soft-md bg-150 bg-x-25 hover:scale-102 hover:shadow-soft-xs active:opacity-85">
-                <BarChart3 className="w-4 h-4 inline mr-2" />
-                View Reports
-              </button>
-              <button className="inline-block px-6 py-3 font-bold text-center text-slate-700 uppercase align-middle transition-all bg-transparent border border-solid rounded-lg cursor-pointer border-slate-700 leading-pro text-xs ease-soft-in tracking-tight-soft shadow-soft-md bg-150 bg-x-25 hover:scale-102 hover:shadow-soft-xs active:opacity-85">
+              </Link>
+              <Link
+                to="/farms"
+                className="inline-block px-6 py-3 font-bold text-center text-slate-700 uppercase align-middle transition-all bg-transparent border border-solid rounded-lg cursor-pointer border-slate-700 leading-pro text-xs ease-soft-in tracking-tight-soft shadow-soft-md bg-150 bg-x-25 hover:scale-102 hover:shadow-soft-xs active:opacity-85"
+              >
+                <Sprout className="w-4 h-4 inline mr-2" />
+                Manage Farms
+              </Link>
+              <Link
+                to="/ai-features"
+                className="inline-block px-6 py-3 font-bold text-center text-slate-700 uppercase align-middle transition-all bg-transparent border border-solid rounded-lg cursor-pointer border-slate-700 leading-pro text-xs ease-soft-in tracking-tight-soft shadow-soft-md bg-150 bg-x-25 hover:scale-102 hover:shadow-soft-xs active:opacity-85"
+              >
                 <TrendingUp className="w-4 h-4 inline mr-2" />
-                Get Recommendations
-              </button>
+                Explore AI Features
+              </Link>
             </div>
           </div>
         </div>

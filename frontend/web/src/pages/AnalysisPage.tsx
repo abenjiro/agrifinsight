@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Upload, Camera, FileImage, AlertCircle, CheckCircle, Loader } from 'lucide-react'
+import { showError } from '../utils/sweetalert'
 
 export function AnalysisPage() {
   const [dragActive, setDragActive] = useState(false)
@@ -89,7 +90,7 @@ export function AnalysisPage() {
       })
     } catch (error: any) {
       console.error('Error analyzing image:', error)
-      alert(`Analysis failed: ${error.message || 'Unknown error'}`)
+      showError(error.message || 'Unknown error occurred during analysis', 'Analysis Failed')
     } finally {
       setIsAnalyzing(false)
     }

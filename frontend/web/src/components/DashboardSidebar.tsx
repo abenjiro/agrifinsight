@@ -6,14 +6,16 @@ import {
   Lightbulb,
   Settings,
   HelpCircle,
+  Sprout,
   X
 } from 'lucide-react'
 import { useSidebar } from '../contexts/SidebarContext'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home, gradient: 'from-purple-700 to-pink-500' },
+  { name: 'My Farms', href: '/farms', icon: Sprout, gradient: 'from-green-600 to-lime-400' },
   { name: 'Analysis', href: '/analysis', icon: Camera, gradient: 'from-blue-600 to-cyan-400' },
-  { name: 'Recommendations', href: '/recommendations', icon: Lightbulb, gradient: 'from-green-600 to-lime-400' },
+  { name: 'Recommendations', href: '/recommendations', icon: Lightbulb, gradient: 'from-amber-600 to-yellow-400' },
   { name: 'Reports', href: '/reports', icon: BarChart3, gradient: 'from-red-600 to-rose-400' },
   { name: 'Settings', href: '/settings', icon: Settings, gradient: 'from-gray-600 to-gray-400' },
   { name: 'Help', href: '/help', icon: HelpCircle, gradient: 'from-yellow-600 to-yellow-400' },
