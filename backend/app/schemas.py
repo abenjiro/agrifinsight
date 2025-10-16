@@ -10,6 +10,7 @@ from datetime import datetime
 class UserBase(BaseModel):
     email: EmailStr
     phone: Optional[str] = None
+    role: Optional[str] = "farmer"
 
 class UserCreate(UserBase):
     password: str
@@ -18,6 +19,7 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     password: Optional[str] = None
+    role: Optional[str] = None
 
 class User(UserBase):
     id: int
@@ -31,22 +33,60 @@ class User(UserBase):
 # Farm schemas
 class FarmBase(BaseModel):
     name: str
-    location: Optional[str] = None
+    address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    altitude: Optional[float] = None
+    boundary_coordinates: Optional[dict] = None
     size: Optional[float] = None
+    size_unit: Optional[str] = "acres"
     soil_type: Optional[str] = None
+    soil_ph: Optional[float] = None
+    soil_composition: Optional[dict] = None
+    terrain_type: Optional[str] = None
+    elevation_profile: Optional[dict] = None
+    climate_zone: Optional[str] = None
+    avg_annual_rainfall: Optional[float] = None
+    avg_temperature: Optional[float] = None
+    water_sources: Optional[list] = None
+    timezone: Optional[str] = None
+    country: Optional[str] = None
+    region: Optional[str] = None
+    district: Optional[str] = None
 
 class FarmCreate(FarmBase):
     pass
 
 class FarmUpdate(BaseModel):
     name: Optional[str] = None
-    location: Optional[str] = None
+    address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    altitude: Optional[float] = None
+    boundary_coordinates: Optional[dict] = None
     size: Optional[float] = None
+    size_unit: Optional[str] = None
     soil_type: Optional[str] = None
+    soil_ph: Optional[float] = None
+    soil_composition: Optional[dict] = None
+    terrain_type: Optional[str] = None
+    elevation_profile: Optional[dict] = None
+    climate_zone: Optional[str] = None
+    avg_annual_rainfall: Optional[float] = None
+    avg_temperature: Optional[float] = None
+    water_sources: Optional[list] = None
+    timezone: Optional[str] = None
+    country: Optional[str] = None
+    region: Optional[str] = None
+    district: Optional[str] = None
 
 class Farm(FarmBase):
     id: int
     user_id: int
+    last_satellite_image_date: Optional[datetime] = None
+    satellite_image_url: Optional[str] = None
+    ndvi_data: Optional[dict] = None
+    land_use_history: Optional[dict] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

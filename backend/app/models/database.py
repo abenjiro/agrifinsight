@@ -18,6 +18,7 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     phone = Column(String(20), unique=True, index=True)
     password_hash = Column(String(255), nullable=False)
+    role = Column(String(50), default="farmer")  # farmer, analyst, admin
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -28,18 +29,52 @@ class User(Base):
     analysis_results = relationship("AnalysisResult", back_populates="user")
 
 class Farm(Base):
-    """Farm model"""
+    """Farm model with comprehensive geospatial data"""
     __tablename__ = "farms"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     name = Column(String(255), nullable=False)
-    location = Column(String(255))  # GPS coordinates or address
+
+    # Location data
+    address = Column(String(500))  # Human-readable address
+    latitude = Column(Float, index=True)  # Decimal degrees
+    longitude = Column(Float, index=True)  # Decimal degrees
+    altitude = Column(Float)  # Meters above sea level
+    boundary_coordinates = Column(JSON)  # GeoJSON polygon for farm boundaries
+
+    # Farm properties
     size = Column(Float)  # Size in acres/hectares
-    soil_type = Column(String(100))
+    size_unit = Column(String(20), default="acres")  # acres or hectares
+
+    # Soil and environmental data
+    soil_type = Column(String(100))  # Primary soil type
+    soil_ph = Column(Float)  # Soil pH level
+    soil_composition = Column(JSON)  # Detailed soil analysis {sand: %, clay: %, silt: %, organic_matter: %}
+    terrain_type = Column(String(100))  # flat, hilly, mountainous, etc.
+    elevation_profile = Column(JSON)  # Elevation variations across farm
+
+    # Climate and weather
+    climate_zone = Column(String(100))  # tropical, temperate, arid, etc.
+    avg_annual_rainfall = Column(Float)  # mm
+    avg_temperature = Column(Float)  # Celsius
+    water_sources = Column(JSON)  # Array of water sources {type: 'river/well/irrigation', location: coords}
+
+    # Historical and satellite data references
+    last_satellite_image_date = Column(DateTime(timezone=True))
+    satellite_image_url = Column(String(500))  # URL to latest satellite imagery
+    ndvi_data = Column(JSON)  # Normalized Difference Vegetation Index data
+    land_use_history = Column(JSON)  # Historical land use data
+
+    # Additional metadata
+    timezone = Column(String(50))  # e.g., "Africa/Accra"
+    country = Column(String(100))
+    region = Column(String(100))  # State/Province
+    district = Column(String(100))
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     # Relationships
     owner = relationship("User", back_populates="farms")
     fields = relationship("Field", back_populates="farm")

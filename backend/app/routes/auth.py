@@ -112,6 +112,7 @@ async def register(
         email=user_data.email,
         phone=user_data.phone,
         password_hash=hashed_password,
+        role=user_data.role or "farmer",
         is_active=True
     )
 
@@ -128,6 +129,7 @@ async def register(
             "id": new_user.id,
             "email": new_user.email,
             "phone": new_user.phone,
+            "role": new_user.role,
             "is_active": new_user.is_active,
             "created_at": new_user.created_at
         },
@@ -177,6 +179,7 @@ async def login(
             "id": user.id,
             "email": user.email,
             "phone": user.phone,
+            "role": user.role,
             "is_active": user.is_active,
             "created_at": user.created_at
         },

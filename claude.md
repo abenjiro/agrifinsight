@@ -21,7 +21,7 @@ AgriFinSight is an AI-powered smart agriculture platform designed to help smallh
 - **Server**: Uvicorn (development), Gunicorn (production)
 
 ### Frontend
-- **Web**: React 18 + TypeScript + Vite
+- **Web**: React 19 + TypeScript + Vite
 - **Mobile**: React Native (being phased out)
 - **Styling**: Tailwind CSS
 - **UI Components**: Lucide React (icons)
