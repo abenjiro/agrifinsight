@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Upload, Camera, FileImage, AlertCircle, CheckCircle, Loader } from 'lucide-react'
 import { showError } from '../utils/sweetalert'
+import api from '../services/api'
 
 export function AnalysisPage() {
   const [dragActive, setDragActive] = useState(false)
@@ -52,26 +53,18 @@ export function AnalysisPage() {
     setIsAnalyzing(true)
 
     try {
-      const token = localStorage.getItem('auth_token')
       const formData = new FormData()
       formData.append('file', uploadedFile)
       // Optional: Add farm_id if available
       // formData.append('farm_id', '1')
 
-      const response = await fetch('http://localhost:8000/api/analysis/upload', {
-        method: 'POST',
+      const response = await api.post('/analysis/upload', formData, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'multipart/form-data',
         },
-        body: formData
       })
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Analysis failed' }))
-        throw new Error(errorData.detail || 'Analysis failed')
-      }
-
-      const data = await response.json()
+      const data = response.data
       console.log('Analysis response:', data)
 
       // The backend returns analysis_result object
@@ -90,7 +83,7 @@ export function AnalysisPage() {
       })
     } catch (error: any) {
       console.error('Error analyzing image:', error)
-      showError(error.message || 'Unknown error occurred during analysis', 'Analysis Failed')
+      showError(error.response?.data?.detail || error.message || 'Unknown error occurred during analysis', 'Analysis Failed')
     } finally {
       setIsAnalyzing(false)
     }

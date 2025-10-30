@@ -10,6 +10,20 @@ from datetime import datetime
 
 Base = declarative_base()
 
+class CropType(Base):
+    """Crop type master list"""
+    __tablename__ = "crop_types"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), unique=True, nullable=False, index=True)
+    category = Column(String(50))  # grains, vegetables, fruits, legumes, cash_crops, tubers
+    scientific_name = Column(String(200))
+    description = Column(Text)
+    common_varieties = Column(Text)  # Comma-separated list
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
 class User(Base):
     """User model"""
     __tablename__ = "users"
@@ -79,6 +93,9 @@ class Farm(Base):
     owner = relationship("User", back_populates="farms")
     fields = relationship("Field", back_populates="farm")
     crop_images = relationship("CropImage", back_populates="farm")
+    crops = relationship("Crop", back_populates="farm", cascade="all, delete-orphan")
+    animals = relationship("Animal", back_populates="farm", cascade="all, delete-orphan")
+    crop_recommendations = relationship("CropRecommendation", back_populates="farm", cascade="all, delete-orphan")
 
 class Field(Base):
     """Field model"""
@@ -178,7 +195,7 @@ class PlantingRecommendation(Base):
 class HarvestPrediction(Base):
     """Harvest prediction model"""
     __tablename__ = "harvest_predictions"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     farm_id = Column(Integer, ForeignKey("farms.id"), nullable=False)
@@ -189,8 +206,146 @@ class HarvestPrediction(Base):
     quality_prediction = Column(String(50))
     factors = Column(JSON)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
+
     # Relationships
     user = relationship("User")
     farm = relationship("Farm")
     field = relationship("Field")
+
+class Crop(Base):
+    """Crop model - tracks crops grown on farms"""
+    __tablename__ = "crops"
+
+    id = Column(Integer, primary_key=True, index=True)
+    farm_id = Column(Integer, ForeignKey("farms.id"), nullable=False)
+    field_id = Column(Integer, ForeignKey("fields.id"))
+
+    # Crop information
+    crop_type = Column(String(100), nullable=False)  # e.g., "Maize", "Rice", "Tomato"
+    variety = Column(String(100))  # Specific variety/cultivar
+    quantity = Column(Float)  # Amount planted
+    quantity_unit = Column(String(20))  # kg, bags, acres, etc.
+
+    # Planting and growth tracking
+    planting_date = Column(DateTime(timezone=True))
+    expected_harvest_date = Column(DateTime(timezone=True))
+    actual_harvest_date = Column(DateTime(timezone=True))
+    growth_stage = Column(String(50))  # seedling, vegetative, flowering, fruiting, mature
+    health_status = Column(String(50), default="healthy")  # healthy, stressed, diseased
+
+    # Yield and production
+    expected_yield = Column(Float)  # Expected production
+    actual_yield = Column(Float)  # Actual production after harvest
+    yield_unit = Column(String(20))  # kg, tons, bags, etc.
+
+    # Additional details
+    notes = Column(Text)  # Farmer's notes
+    irrigation_method = Column(String(50))  # rain-fed, drip, sprinkler, etc.
+    fertilizer_used = Column(JSON)  # Array of fertilizers applied
+    pesticides_used = Column(JSON)  # Array of pesticides applied
+
+    # Status
+    is_active = Column(Boolean, default=True)  # Currently being grown
+    is_harvested = Column(Boolean, default=False)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    farm = relationship("Farm", back_populates="crops")
+    field = relationship("Field")
+
+class Animal(Base):
+    """Animal model - tracks livestock/animals on farms"""
+    __tablename__ = "animals"
+
+    id = Column(Integer, primary_key=True, index=True)
+    farm_id = Column(Integer, ForeignKey("farms.id"), nullable=False)
+
+    # Animal information
+    animal_type = Column(String(100), nullable=False)  # cattle, goat, sheep, pig, chicken, etc.
+    breed = Column(String(100))  # Specific breed
+    quantity = Column(Integer, nullable=False)  # Number of animals
+
+    # Identification
+    tag_numbers = Column(JSON)  # Array of individual tag/ID numbers
+    age_group = Column(String(50))  # young, adult, senior
+    gender_distribution = Column(JSON)  # {"male": 10, "female": 20}
+
+    # Health and care
+    health_status = Column(String(50), default="healthy")  # healthy, sick, under_treatment
+    vaccination_records = Column(JSON)  # Array of vaccination records
+    last_health_checkup = Column(DateTime(timezone=True))
+    veterinary_notes = Column(Text)
+
+    # Production tracking (for productive animals)
+    purpose = Column(String(50))  # meat, dairy, eggs, breeding, draft, etc.
+    production_data = Column(JSON)  # {"milk_per_day": 5, "eggs_per_week": 20}
+
+    # Housing and feeding
+    housing_type = Column(String(50))  # free-range, pen, barn, coop, etc.
+    feeding_type = Column(String(50))  # grazing, supplemented, intensive
+    feed_consumption = Column(JSON)  # Feed requirements and consumption
+
+    # Acquisition and status
+    acquisition_date = Column(DateTime(timezone=True))
+    acquisition_cost = Column(Float)
+    current_value = Column(Float)
+    is_active = Column(Boolean, default=True)  # Currently on farm
+
+    # Additional details
+    notes = Column(Text)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    farm = relationship("Farm", back_populates="animals")
+
+class CropRecommendation(Base):
+    """AI-powered crop recommendations based on geospatial data"""
+    __tablename__ = "crop_recommendations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    farm_id = Column(Integer, ForeignKey("farms.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    # Recommendation details
+    recommended_crop = Column(String(100), nullable=False)
+    confidence_score = Column(Float)  # 0-1 confidence in recommendation
+    suitability_score = Column(Float)  # 0-100 how suitable the crop is
+
+    # Factors considered
+    climate_factors = Column(JSON)  # Temperature, rainfall patterns
+    soil_factors = Column(JSON)  # pH, nutrients, type
+    geographic_factors = Column(JSON)  # Elevation, terrain
+    market_factors = Column(JSON)  # Demand, prices, profitability
+
+    # Recommendations and guidance
+    planting_season = Column(String(100))  # Best time to plant
+    expected_yield_range = Column(JSON)  # {"min": 1000, "max": 1500, "unit": "kg/acre"}
+    water_requirements = Column(String(100))  # low, medium, high
+    care_difficulty = Column(String(50))  # easy, moderate, difficult
+    growth_duration_days = Column(Integer)  # Days to maturity
+
+    # Economic analysis
+    estimated_profit_margin = Column(Float)  # Estimated profit percentage
+    market_demand = Column(String(50))  # low, medium, high
+    selling_price_range = Column(JSON)  # Price range data
+
+    # Additional information
+    benefits = Column(JSON)  # Array of benefits for this crop
+    challenges = Column(JSON)  # Array of potential challenges
+    tips = Column(JSON)  # Array of cultivation tips
+    alternative_crops = Column(JSON)  # Alternative crop suggestions
+
+    # AI model metadata
+    model_version = Column(String(50))
+    recommendation_date = Column(DateTime(timezone=True), server_default=func.now())
+    is_active = Column(Boolean, default=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    farm = relationship("Farm", back_populates="crop_recommendations")
+    user = relationship("User")

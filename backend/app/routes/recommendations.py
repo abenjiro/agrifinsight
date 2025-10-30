@@ -8,7 +8,7 @@ from datetime import datetime
 
 from app.services.ai_service import AIService
 
-router = APIRouter(prefix="/recommendations", tags=["recommendations"])
+router = APIRouter(prefix="/api/recommendations", tags=["recommendations"])
 
 # Initialize AI service
 ai_service = AIService()

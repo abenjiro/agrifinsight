@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react'
 import { showError, showSuccess } from '../utils/sweetalert'
+import { authService } from '../services/api'
 
 export function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -43,39 +44,25 @@ export function RegisterPage() {
     setLoading(true)
 
     try {
-      // Call the actual API
-      const response = await fetch('http://localhost:8000/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          phone: formData.phone || null,
-          role: formData.role
-        }),
+      const response:any = await authService.register({
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone || undefined,
+        role: formData.role
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.detail || 'Registration failed')
-      }
-
       // Store the access token
-      localStorage.setItem('auth_token', data.access_token)
-      localStorage.setItem('refresh_token', data.refresh_token)
+      localStorage.setItem('auth_token', response.access_token)
 
       // Store user data
-      localStorage.setItem('user', JSON.stringify(data.user))
+      localStorage.setItem('user', JSON.stringify(response.user))
 
       // Show success message and navigate
       await showSuccess('Your account has been created successfully! Welcome to AgriFinSight!', 'Registration Successful')
       navigate('/dashboard')
     } catch (error: any) {
       console.error('Registration error:', error)
-      showError(error.message || 'Registration failed. Please try again.', 'Registration Failed')
+      showError(error.response?.data?.detail || error.message || 'Registration failed. Please try again.', 'Registration Failed')
     } finally {
       setLoading(false)
     }

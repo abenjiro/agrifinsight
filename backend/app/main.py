@@ -10,7 +10,7 @@ import os
 from dotenv import load_dotenv
 
 # Import routes
-from app.routes import auth, analysis, recommendations, farms
+from app.routes import auth, analysis, recommendations, farms, crops
 from app.database import engine
 from app.models.database import Base
 
@@ -73,6 +73,7 @@ app.include_router(auth.router)
 app.include_router(analysis.router)
 app.include_router(recommendations.router)
 app.include_router(farms.router)
+app.include_router(crops.router)
 
 if __name__ == "__main__":
     import uvicorn

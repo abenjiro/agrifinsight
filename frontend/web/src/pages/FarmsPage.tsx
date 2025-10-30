@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Plus, MapPin, Ruler, Sprout, Edit2, Trash2, X, Navigation, Cloud, Droplets, Thermometer, Map, ChevronRight, ChevronLeft, Check } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Plus, MapPin, Ruler, Sprout, Edit2, Trash2, X, Navigation, Cloud, Droplets, Thermometer, Map, ChevronRight, ChevronLeft, Check, Eye } from 'lucide-react'
 import { showSuccess, showError, showConfirm } from '../utils/sweetalert'
+import { farmService } from '../services/api'
 
 interface Farm {
   id: number
@@ -26,6 +28,7 @@ interface Farm {
 }
 
 export function FarmsPage() {
+  const navigate = useNavigate()
   const [farms, setFarms] = useState<Farm[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -66,20 +69,9 @@ export function FarmsPage() {
   const fetchFarms = async () => {
     setLoading(true)
     try {
-      const token = localStorage.getItem('auth_token')
-      const response = await fetch('http://localhost:8000/farms/', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch farms')
-      }
-
-      const data = await response.json()
-      console.log(data)
-      setFarms(data)
+      const response : any = await farmService.getFarms()
+      console.log(response)
+      setFarms(response.data || response)
     } catch (error) {
       console.error('Error fetching farms:', error)
       showError('Failed to load farms. Please try again.')
@@ -129,8 +121,8 @@ export function FarmsPage() {
     setEnriching(true)
     try {
       const token = localStorage.getItem('auth_token')
-      const response = await fetch(`http://localhost:8000/farms/enrich-location?latitude=${latitude}&longitude=${longitude}`, {
-        method: 'POST',
+      const response = await fetch(`http://localhost:8000/api/farms/enrich-location?latitude=${latitude}&longitude=${longitude}`, {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -153,8 +145,8 @@ export function FarmsPage() {
         district: data.district || prev.district,
         timezone: data.timezone || prev.timezone,
         climate_zone: data.climate_zone || prev.climate_zone,
-        avg_temperature: data.current_weather?.temperature?.toFixed(1) || prev.avg_temperature,
-        avg_annual_rainfall: prev.avg_annual_rainfall,
+        avg_temperature: data.avg_temperature?.toString() || data.current_weather?.temperature?.toFixed(1) || prev.avg_temperature,
+        avg_annual_rainfall: data.avg_annual_rainfall?.toString() || prev.avg_annual_rainfall,
         soil_ph: data.soil_data?.composition?.phh2o ? (data.soil_data.composition.phh2o / 10).toFixed(1) : prev.soil_ph
       }))
 
@@ -197,8 +189,8 @@ export function FarmsPage() {
       }
 
       const url = editingFarm
-        ? `http://localhost:8000/farms/${editingFarm.id}`
-        : 'http://localhost:8000/farms/'
+        ? `http://localhost:8000/api/farms/${editingFarm.id}`
+        : 'http://localhost:8000/api/farms/'
 
       const response = await fetch(url, {
         method: editingFarm ? 'PUT' : 'POST',
@@ -261,7 +253,7 @@ export function FarmsPage() {
 
     try {
       const token = localStorage.getItem('auth_token')
-      const response = await fetch(`http://localhost:8000/farms/${farmId}`, {
+      const response = await fetch(`http://localhost:8000/api/farms/${farmId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -384,6 +376,13 @@ export function FarmsPage() {
                     <h5 className="font-bold text-gray-900 text-lg">{farm.name}</h5>
                     <div className="flex gap-2">
                       <button
+                        onClick={() => navigate(`/farms/${farm.id}`)}
+                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
+                        title="View Details"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => handleEdit(farm)}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
                       >
@@ -453,11 +452,11 @@ export function FarmsPage() {
       {showCreateModal && (
         <>
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-[900]"
+            className="fixed inset-0 bg-black bg-opacity-50 z-[1000]"
             onClick={resetForm}
           />
-          <div className="fixed inset-0 z-[901] flex items-center justify-center p-4 overflow-y-auto">
-            <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-soft-2xl my-8">
+          <div className="fixed inset-0 z-[1001] flex items-center justify-center p-4 overflow-y-auto">
+            <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-soft-2xl my-8 z-[1002]">
               <div className="p-6">
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6">

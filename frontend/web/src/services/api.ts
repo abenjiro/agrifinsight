@@ -1,13 +1,18 @@
 import axios from 'axios'
-import type { 
-  User, 
-  Farm, 
-  AnalysisResult, 
-  Recommendation, 
+import type {
+  User,
+  Farm,
+  AnalysisResult,
+  Recommendation,
   WeatherData,
   ApiResponse,
   LoginCredentials,
-  RegisterData
+  RegisterData,
+  Crop,
+  CropCreate,
+  Animal,
+  AnimalCreate,
+  CropRecommendation
 } from '../types'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
@@ -121,6 +126,75 @@ export const recommendationService = {
 
   async getWeatherData(farmId: string): Promise<ApiResponse<WeatherData[]>> {
     const response = await api.get(`/recommendations/weather/${farmId}`)
+    return response.data
+  },
+}
+
+export const cropService = {
+  async getCropTypes(): Promise<string[]> {
+    const response = await api.get('/crops/types')
+    return response.data.crop_types
+  },
+
+  async getFarmCrops(farmId: number): Promise<Crop[]> {
+    const response = await api.get(`/farms/${farmId}/crops`)
+    return response.data
+  },
+
+  async createCrop(farmId: number, data: CropCreate): Promise<Crop> {
+    const response = await api.post(`/farms/${farmId}/crops`, data)
+    return response.data
+  },
+
+  async getCrop(cropId: number): Promise<Crop> {
+    const response = await api.get(`/crops/${cropId}`)
+    return response.data
+  },
+
+  async updateCrop(cropId: number, data: Partial<CropCreate>): Promise<Crop> {
+    const response = await api.put(`/crops/${cropId}`, data)
+    return response.data
+  },
+
+  async deleteCrop(cropId: number): Promise<void> {
+    await api.delete(`/crops/${cropId}`)
+  },
+}
+
+export const animalService = {
+  async getFarmAnimals(farmId: number): Promise<Animal[]> {
+    const response = await api.get(`/farms/${farmId}/animals`)
+    return response.data
+  },
+
+  async createAnimal(farmId: number, data: AnimalCreate): Promise<Animal> {
+    const response = await api.post(`/farms/${farmId}/animals`, data)
+    return response.data
+  },
+
+  async getAnimal(animalId: number): Promise<Animal> {
+    const response = await api.get(`/animals/${animalId}`)
+    return response.data
+  },
+
+  async updateAnimal(animalId: number, data: Partial<AnimalCreate>): Promise<Animal> {
+    const response = await api.put(`/animals/${animalId}`, data)
+    return response.data
+  },
+
+  async deleteAnimal(animalId: number): Promise<void> {
+    await api.delete(`/animals/${animalId}`)
+  },
+}
+
+export const cropRecommendationService = {
+  async generateRecommendations(farmId: number): Promise<CropRecommendation[]> {
+    const response = await api.post(`/farms/${farmId}/crop-recommendations`)
+    return response.data
+  },
+
+  async getRecommendations(farmId: number): Promise<CropRecommendation[]> {
+    const response = await api.get(`/farms/${farmId}/crop-recommendations`)
     return response.data
   },
 }

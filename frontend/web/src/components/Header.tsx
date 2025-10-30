@@ -16,6 +16,7 @@ export default function Header() {
     { label: "Home", href: "/", active: true },
     { label: "AI Features", href: "/ai-features" },
     { label: "About Us", href: "/about" },
+    { label: "Contact", href: "/contact" },
   ];
 
   return (
@@ -51,23 +52,23 @@ export default function Header() {
         {/* Desktop Buttons */}
         <div className="hidden md:flex gap-3">
           <Link
-            to="/about"
+            to="/register"
             className={`px-4 py-2 rounded-full border text-sm font-medium transition
             ${
               scrolled
-                ? "border-gray-300 hover:bg-gray-100 text-gray-800"
+                ? "border-green-300 hover:bg-green-50 text-green-700"
                 : "border-white/30 hover:bg-white/10 text-white"
             }`}
           >
-            Contact us
+            Sign Up
           </Link>
           <Link
             to="/login"
             className={`px-4 py-2 rounded-full text-sm font-semibold transition
             ${
               scrolled
-                ? "bg-blue-600 text-white hover:bg-blue-700"
-                : "bg-white text-blue-700 hover:bg-blue-100"
+                ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700"
+                : "bg-white text-green-700 hover:bg-green-50"
             }`}
           >
             Sign In
@@ -108,15 +109,15 @@ export default function Header() {
           {/* Mobile Buttons */}
           <div className="border-t pt-4 mt-4 flex flex-col gap-3">
             <Link
-              to="/about"
-              className="w-full border rounded-full py-2 text-sm hover:bg-gray-100 text-center"
+              to="/register"
+              className="w-full border border-green-300 text-green-700 rounded-full py-2 text-sm hover:bg-green-50 text-center font-medium"
               onClick={() => setMenuOpen(false)}
             >
-              Contact us
+              Sign Up
             </Link>
             <Link
               to="/login"
-              className="w-full bg-blue-600 text-white rounded-full py-2 text-sm hover:bg-blue-700 text-center"
+              className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-full py-2 text-sm hover:from-green-700 hover:to-emerald-700 text-center font-semibold"
               onClick={() => setMenuOpen(false)}
             >
               Sign In

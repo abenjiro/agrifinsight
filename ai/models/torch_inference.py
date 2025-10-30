@@ -91,13 +91,32 @@ class TorchImageClassifier:
         try:
             module = importlib.import_module(self.model_module)
             model_class = getattr(module, self.model_class_name)
-            model = model_class()
+
+            # Load checkpoint to get model info
             checkpoint = torch.load(str(self.model_path), map_location=self.device)
-            # Accept both {'state_dict': ...} and raw state_dict
-            state_dict = checkpoint.get("state_dict", checkpoint) if isinstance(checkpoint, dict) else checkpoint
+
+            # Try to determine num_classes from checkpoint
+            num_classes = len(self.class_names) if self.class_names else 10
+            if isinstance(checkpoint, dict):
+                # Check for class_names in checkpoint
+                if 'class_names' in checkpoint and checkpoint['class_names']:
+                    num_classes = len(checkpoint['class_names'])
+                # Check for num_classes in config
+                elif 'config' in checkpoint and 'num_classes' in checkpoint['config']:
+                    num_classes = checkpoint['config']['num_classes']
+
+            # Instantiate model with correct num_classes
+            model = model_class(num_classes=num_classes)
+
+            # Accept both {'model_state_dict': ...}, {'state_dict': ...} and raw state_dict
+            if isinstance(checkpoint, dict):
+                state_dict = checkpoint.get("model_state_dict", checkpoint.get("state_dict", checkpoint))
+            else:
+                state_dict = checkpoint
+
             model.load_state_dict(state_dict, strict=False)
             logger.info(
-                f"Loaded PyTorch model '{self.model_class_name}' from module '{self.model_module}' with checkpoint {self.model_path}"
+                f"Loaded PyTorch model '{self.model_class_name}' from module '{self.model_module}' with {num_classes} classes from checkpoint {self.model_path}"
             )
             return model
         except Exception as e:

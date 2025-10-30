@@ -4,8 +4,10 @@ import { LandingLayout } from './components/LandingLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { HomePage } from './pages/HomePage'
 import { AboutUsPage } from './pages/AboutUsPage'
+import ContactUsPage from './pages/ContactUsPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { FarmsPage } from './pages/FarmsPage'
+import FarmDetailPage from './pages/FarmDetailPage'
 import { AIFeaturesPage } from './pages/AIFeaturesPage'
 import { AnalysisPage } from './pages/AnalysisPage'
 import { RecommendationsPage } from './pages/RecommendationsPage'
@@ -41,6 +43,11 @@ function App() {
           <AboutUsPage />
         </LandingLayout>
       } />
+      <Route path="/contact" element={
+        <LandingLayout>
+          <ContactUsPage />
+        </LandingLayout>
+      } />
 
       {/* Dashboard pages with DashboardLayout - Protected Routes */}
       <Route path="/dashboard" element={
@@ -55,6 +62,11 @@ function App() {
           <DashboardLayout>
             <FarmsPage />
           </DashboardLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/farms/:id" element={
+        <ProtectedRoute>
+          <FarmDetailPage />
         </ProtectedRoute>
       } />
       <Route path="/analysis" element={

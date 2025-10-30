@@ -11,6 +11,7 @@ import {
   Plus,
   ArrowRight
 } from 'lucide-react'
+import { farmService } from '../services/api'
 
 interface Farm {
   id: number
@@ -54,34 +55,26 @@ export function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      const token = localStorage.getItem('auth_token')
       const user = JSON.parse(localStorage.getItem('user') || '{}')
       setUserName(user.email?.split('@')[0] || 'User')
 
-      // Fetch farms
-      const farmsResponse = await fetch('http://localhost:8000/farms/', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      // Fetch farms using farmService
+      const response = await farmService.getFarms()
+      const farmsData = response.data || response
+      setFarms(farmsData)
+
+      // Calculate stats
+      const totalSize = farmsData.reduce((sum: number, farm: Farm) =>
+        sum + (farm.size || 0), 0
+      )
+
+      setStats({
+        totalFarms: farmsData.length,
+        totalSize: Math.round(totalSize),
+        analysisCount: 0, // TODO: Fetch from analysis endpoint
+        issuesDetected: 0, // TODO: Fetch from analysis endpoint
+        healthyPercentage: 95 // TODO: Calculate from analysis data
       })
-
-      if (farmsResponse.ok) {
-        const farmsData = await farmsResponse.json()
-        setFarms(farmsData)
-
-        // Calculate stats
-        const totalSize = farmsData.reduce((sum: number, farm: Farm) =>
-          sum + (farm.size || 0), 0
-        )
-
-        setStats({
-          totalFarms: farmsData.length,
-          totalSize: Math.round(totalSize),
-          analysisCount: 0, // TODO: Fetch from analysis endpoint
-          issuesDetected: 0, // TODO: Fetch from analysis endpoint
-          healthyPercentage: 95 // TODO: Calculate from analysis data
-        })
-      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {

@@ -15,7 +15,7 @@ from app.database import get_db
 from app.config import settings
 from app.schemas import UserCreate, User as UserSchema, Token
 
-router = APIRouter(prefix="/auth", tags=["authentication"])
+router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
 # Password hashing
 pwd_context = CryptContext(

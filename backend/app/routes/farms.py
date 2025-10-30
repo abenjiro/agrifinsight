@@ -2,7 +2,7 @@
 Farm management routes
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, Query, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
@@ -13,7 +13,7 @@ from app.routes.auth import get_current_user_from_token
 from app.schemas import FarmCreate, FarmUpdate, Farm as FarmSchema, FieldCreate, Field as FieldSchema
 from app.services.geospatial_service import geospatial_service
 
-router = APIRouter(prefix="/farms", tags=["farm management"])
+router = APIRouter(prefix="/api/farms", tags=["farm management"])
 
 @router.get("/", response_model=List[FarmSchema])
 async def get_farms(
@@ -31,6 +31,28 @@ async def create_farm(
     db: Session = Depends(get_db)
 ):
     """Create a new farm with comprehensive geospatial data"""
+
+    # Auto-enrich with satellite data if coordinates provided
+    ndvi_data = None
+    satellite_date = None
+    if farm_data.latitude and farm_data.longitude:
+        try:
+            # Fetch satellite and NDVI data in background
+            enrichment = await geospatial_service.enrich_farm_location(
+                farm_data.latitude,
+                farm_data.longitude,
+                include_satellite=True
+            )
+
+            # Extract satellite data for storage
+            if enrichment.get("vegetation_health"):
+                ndvi_data = enrichment["vegetation_health"]
+                satellite_date = datetime.now()
+
+        except Exception as e:
+            # Don't fail farm creation if satellite fetch fails
+            print(f"Warning: Could not fetch satellite data: {e}")
+
     new_farm = Farm(
         user_id=current_user.id,
         name=farm_data.name,
@@ -53,7 +75,10 @@ async def create_farm(
         timezone=farm_data.timezone,
         country=farm_data.country,
         region=farm_data.region,
-        district=farm_data.district
+        district=farm_data.district,
+        # Auto-save satellite data
+        ndvi_data=ndvi_data,
+        last_satellite_image_date=satellite_date
     )
 
     db.add(new_farm)
@@ -61,6 +86,18 @@ async def create_farm(
     db.refresh(new_farm)
 
     return new_farm
+
+@router.get("/enrich-location")
+async def enrich_farm_location(
+    current_user: User = Depends(get_current_user_from_token),
+    latitude: float = Query(..., description="Latitude coordinate"),
+    longitude: float = Query(..., description="Longitude coordinate")
+):
+    """
+    Enrich farm location with weather, soil, elevation, and geographic data
+    """
+    enriched_data = await geospatial_service.enrich_farm_location(latitude, longitude)
+    return enriched_data
 
 @router.get("/{farm_id}", response_model=FarmSchema)
 async def get_farm(
@@ -134,17 +171,65 @@ async def delete_farm(
 
     return None
 
-@router.post("/enrich-location")
-async def enrich_farm_location(
-    latitude: float,
-    longitude: float,
-    current_user: User = Depends(get_current_user_from_token)
+@router.post("/{farm_id}/refresh-satellite")
+async def refresh_farm_satellite_data(
+    farm_id: int,
+    current_user: User = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db)
 ):
     """
-    Enrich farm location with weather, soil, elevation, and geographic data
+    Refresh satellite and NDVI data for a farm
+    Useful for monitoring vegetation health over time
     """
-    enriched_data = await geospatial_service.enrich_farm_location(latitude, longitude)
-    return enriched_data
+    farm = db.query(Farm).filter(
+        Farm.id == farm_id,
+        Farm.user_id == current_user.id
+    ).first()
+
+    if not farm:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Farm not found"
+        )
+
+    if not farm.latitude or not farm.longitude:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Farm coordinates not set"
+        )
+
+    try:
+        # Fetch latest satellite and NDVI data
+        satellite_data = await geospatial_service.get_satellite_imagery(
+            farm.latitude,
+            farm.longitude
+        )
+
+        # Update farm with new satellite data
+        if satellite_data.get("ndvi_data"):
+            farm.ndvi_data = satellite_data["ndvi_data"]
+            farm.last_satellite_image_date = datetime.now()
+
+            db.commit()
+            db.refresh(farm)
+
+            return {
+                "message": "Satellite data refreshed successfully",
+                "ndvi_data": farm.ndvi_data,
+                "last_update": farm.last_satellite_image_date,
+                "recommendations": satellite_data.get("recommendations", [])
+            }
+        else:
+            return {
+                "message": "Satellite data unavailable",
+                "error": "Could not fetch NDVI data"
+            }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to refresh satellite data: {str(e)}"
+        )
 
 @router.get("/{farm_id}/weather")
 async def get_farm_weather(

@@ -10,6 +10,7 @@ from typing import Dict, Any, Optional
 from pathlib import Path
 
 # Add the AI models directory to the Python path
+# Path: backend/app/services/ai_service.py -> go up to project root
 ai_models_path = Path(__file__).parent.parent.parent.parent / "ai" / "models"
 sys.path.append(str(ai_models_path))
 

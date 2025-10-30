@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
+import api from '../services/api'
 
 interface ProtectedRouteProps {
   children: ReactNode
@@ -22,20 +23,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         }
 
         // Verify token with backend
-        const response = await fetch('http://localhost:8000/auth/verify', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        })
-
-        if (response.ok) {
+        try {
+          await api.get('/auth/verify')
           setIsAuthenticated(true)
-        } else {
+        } catch (error: any) {
           // Token is invalid, clear it
           localStorage.removeItem('auth_token')
-          localStorage.removeItem('refresh_token')
           localStorage.removeItem('user')
           setIsAuthenticated(false)
         }
@@ -43,7 +36,6 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         console.error('Auth check failed:', error)
         // On error, clear tokens and mark as unauthenticated
         localStorage.removeItem('auth_token')
-        localStorage.removeItem('refresh_token')
         localStorage.removeItem('user')
         setIsAuthenticated(false)
       } finally {

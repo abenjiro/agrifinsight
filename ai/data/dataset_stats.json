@@ -1,0 +1,54 @@
+{
+  "total_samples": 6000,
+  "num_crops": 6,
+  "features": [
+    "latitude",
+    "longitude",
+    "altitude",
+    "avg_temperature",
+    "avg_annual_rainfall",
+    "soil_ph",
+    "soil_type",
+    "climate_zone",
+    "terrain_type",
+    "recommended_crop",
+    "suitability_score",
+    "soil_type_encoded",
+    "climate_zone_encoded",
+    "terrain_type_encoded",
+    "crop_label"
+  ],
+  "feature_stats": {
+    "latitude": {
+      "min": -49.986106766531066,
+      "max": 49.982577114093786,
+      "mean": 0.3812573601752117
+    },
+    "longitude": {
+      "min": -179.92383295961378,
+      "max": 179.80876877663485,
+      "mean": 1.0721618065891443
+    },
+    "altitude": {
+      "min": 0.0,
+      "max": 2999.8394083383328,
+      "mean": 1014.9460469456176
+    },
+    "avg_temperature": {
+      "min": 10.0,
+      "max": 45.0,
+      "mean": 25.484733344674172
+    },
+    "avg_annual_rainfall": {
+      "min": 202.2819668097344,
+      "max": 3498.6530887499484,
+      "mean": 1023.9545668351584
+    },
+    "soil_ph": {
+      "min": 4.003340849403854,
+      "max": 8.495197950897657,
+      "mean": 6.267051808533085
+    }
+  },
+  "generated_at": "2025-10-29T02:48:36.073422"
+}
