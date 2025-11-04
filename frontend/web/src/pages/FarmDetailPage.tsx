@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { MapPin, TrendingUp, Sprout, PawPrint, Plus, Trash2, Edit2, Loader } from 'lucide-react'
+import { MapPin, TrendingUp, Sprout, PawPrint, Plus, Trash2, Edit2, Loader, Cloud, Calendar } from 'lucide-react'
 import { DashboardLayout } from '../components/DashboardLayout'
+import { WeatherWidget } from '../components/WeatherWidget'
 import AddCropModal from '../components/AddCropModal'
 import AddAnimalModal from '../components/AddAnimalModal'
 import CropRecommendations from '../components/CropRecommendations'
@@ -161,7 +162,30 @@ export default function FarmDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Quick Actions */}
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button
+              onClick={() => navigate(`/farms/${id}/planting`)}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition shadow-md"
+            >
+              <Calendar className="w-4 h-4" />
+              Planting Recommendations
+            </button>
+            <button
+              onClick={() => {/* TODO: Add weather modal or navigate to weather page */}}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition shadow-md"
+            >
+              <Cloud className="w-4 h-4" />
+              View Weather Forecast
+            </button>
+          </div>
         </div>
+
+        {/* Weather Widget */}
+        {id && farm.latitude && farm.longitude && (
+          <WeatherWidget farmId={parseInt(id)} compact={true} showForecast={false} />
+        )}
 
         {/* Main Content Grid: Crops & Animals (Main Focus) + Recommendations (Sidebar) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

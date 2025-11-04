@@ -1,23 +1,25 @@
 """
 Geospatial service for weather, satellite, and environmental data
+Uses configuration from app.config for all API endpoints and keys
 """
 
 import requests
 from typing import Dict, Optional, List, Tuple
 from datetime import datetime, timedelta
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
+from app.config import settings
 
 class GeospatialService:
     """Service for handling geospatial data, weather, and satellite imagery"""
 
     def __init__(self):
-        # API keys (set in environment variables)
-        self.openweather_api_key = os.getenv("OPENWEATHER_API_KEY", "")
-        self.nasa_api_key = os.getenv("NASA_API_KEY", "DEMO_KEY")
-        self.elevation_api_url = "https://api.open-elevation.com/api/v1/lookup"
+        # API keys and URLs from settings
+        self.openweather_api_key = settings.openweather_api_key
+        self.openweather_api_url = settings.openweather_api_url
+        self.nasa_api_key = settings.nasa_api_key
+        self.elevation_api_url = settings.elevation_api_url
+        self.soilgrids_api_url = settings.soilgrids_api_url
+        self.nominatim_api_url = settings.nominatim_api_url
+        self.nominatim_user_agent = settings.nominatim_user_agent
 
     async def get_weather_data(self, latitude: float, longitude: float) -> Dict:
         """
@@ -29,12 +31,12 @@ class GeospatialService:
 
         try:
             # Current weather
-            current_url = f"https://api.openweathermap.org/data/2.5/weather?lat={latitude}&lon={longitude}&appid={self.openweather_api_key}&units=metric"
+            current_url = f"{self.openweather_api_url}/weather?lat={latitude}&lon={longitude}&appid={self.openweather_api_key}&units=metric"
             current_response = requests.get(current_url, timeout=10)
             current_data = current_response.json() if current_response.ok else {}
 
             # 7-day forecast
-            forecast_url = f"https://api.openweathermap.org/data/2.5/onecall?lat={latitude}&lon={longitude}&exclude=minutely,hourly&appid={self.openweather_api_key}&units=metric"
+            forecast_url = f"{self.openweather_api_url}/onecall?lat={latitude}&lon={longitude}&exclude=minutely,hourly&appid={self.openweather_api_key}&units=metric"
             forecast_response = requests.get(forecast_url, timeout=10)
             forecast_data = forecast_response.json() if forecast_response.ok else {}
 
@@ -63,7 +65,7 @@ class GeospatialService:
         Uses Open Elevation API
         """
         try:
-            url = f"{self.elevation_api_url}?locations={latitude},{longitude}"
+            url = f"{self.elevation_api_url}/lookup?locations={latitude},{longitude}"
             response = requests.get(url, timeout=10)
 
             if response.ok:
@@ -284,7 +286,7 @@ class GeospatialService:
         """
         try:
             # SoilGrids API
-            url = f"https://rest.isric.org/soilgrids/v2.0/properties/query"
+            url = f"{self.soilgrids_api_url}/properties/query"
             params = {
                 "lon": longitude,
                 "lat": latitude,
@@ -322,7 +324,7 @@ class GeospatialService:
         Uses OpenStreetMap Nominatim API
         """
         try:
-            url = "https://nominatim.openstreetmap.org/reverse"
+            url = f"{self.nominatim_api_url}/reverse"
             params = {
                 "lat": latitude,
                 "lon": longitude,
@@ -330,7 +332,7 @@ class GeospatialService:
                 "addressdetails": 1
             }
             headers = {
-                "User-Agent": "AgriFinSight/1.0"  # Required by Nominatim
+                "User-Agent": self.nominatim_user_agent  # Required by Nominatim
             }
 
             response = requests.get(url, params=params, headers=headers, timeout=10)

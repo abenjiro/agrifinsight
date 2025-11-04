@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, MapPin, Ruler, Sprout, Edit2, Trash2, X, Navigation, Cloud, Droplets, Thermometer, Map, ChevronRight, ChevronLeft, Check, Eye } from 'lucide-react'
+import { Plus, MapPin, Ruler, Sprout, Edit2, Trash2, X, Navigation, Cloud, Droplets, Thermometer, Map, ChevronRight, ChevronLeft, Check, Eye, Calendar } from 'lucide-react'
 import { showSuccess, showError, showConfirm } from '../utils/sweetalert'
 import { farmService } from '../services/api'
 
@@ -35,6 +35,7 @@ export function FarmsPage() {
   const [editingFarm, setEditingFarm] = useState<Farm | null>(null)
   const [enriching, setEnriching] = useState(false)
   const [currentStep, setCurrentStep] = useState(1)
+  const [submitting, setSubmitting] = useState(false)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -166,6 +167,13 @@ export function FarmsPage() {
       return
     }
 
+    // Prevent multiple submissions
+    if (submitting) {
+      return
+    }
+
+    setSubmitting(true)
+
     try {
       const token = localStorage.getItem('auth_token')
       const payload = {
@@ -206,12 +214,19 @@ export function FarmsPage() {
         throw new Error(errorData.detail || 'Operation failed')
       }
 
-      resetForm()
-      fetchFarms()
+      // Refresh farms list
+      await fetchFarms()
+
+      // Show success message
       showSuccess(editingFarm ? 'Farm updated successfully!' : 'Farm created successfully!', 'Success')
+
+      // Close modal and reset form
+      resetForm()
     } catch (error: any) {
       console.error('Error saving farm:', error)
       showError(error.message || 'Failed to save farm. Please try again.', 'Save Failed')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -295,6 +310,7 @@ export function FarmsPage() {
     setShowCreateModal(false)
     setEditingFarm(null)
     setCurrentStep(1)
+    setSubmitting(false)
   }
 
   const nextStep = () => {
@@ -437,9 +453,21 @@ export function FarmsPage() {
                   </div>
 
                   <div className="mt-4 pt-4 border-t border-gray-100">
-                    <p className="text-xs text-gray-500">
-                      Created {new Date(farm.created_at).toLocaleDateString()}
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-gray-500">
+                        Created {new Date(farm.created_at).toLocaleDateString()}
+                      </p>
+                      {farm.latitude && farm.longitude && (
+                        <button
+                          onClick={() => navigate(`/farms/${farm.id}/planting`)}
+                          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition"
+                          title="View planting recommendations"
+                        >
+                          <Calendar className="w-3 h-3" />
+                          Planting
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -874,10 +902,20 @@ export function FarmsPage() {
                     ) : (
                       <button
                         type="submit"
-                        className="flex-1 px-6 py-2.5 font-bold text-center text-white uppercase align-middle transition-all bg-gradient-to-tl from-green-600 to-lime-400 rounded-lg cursor-pointer leading-pro text-xs ease-soft-in tracking-tight-soft shadow-soft-md hover:scale-102 hover:shadow-soft-xs active:opacity-85 flex items-center justify-center"
+                        disabled={submitting}
+                        className="flex-1 px-6 py-2.5 font-bold text-center text-white uppercase align-middle transition-all bg-gradient-to-tl from-green-600 to-lime-400 rounded-lg cursor-pointer leading-pro text-xs ease-soft-in tracking-tight-soft shadow-soft-md hover:scale-102 hover:shadow-soft-xs active:opacity-85 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <Check className="w-4 h-4 mr-2" />
-                        {editingFarm ? 'Update Farm' : 'Create Farm'}
+                        {submitting ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            {editingFarm ? 'Updating...' : 'Creating...'}
+                          </>
+                        ) : (
+                          <>
+                            <Check className="w-4 h-4 mr-2" />
+                            {editingFarm ? 'Update Farm' : 'Create Farm'}
+                          </>
+                        )}
                       </button>
                     )}
                   </div>

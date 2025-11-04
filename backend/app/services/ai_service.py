@@ -1,6 +1,7 @@
 """
 AI Service for AgriFinSight
 Integrates with AI models for crop analysis and predictions
+Uses configuration from app.config for model paths
 """
 
 import os
@@ -9,12 +10,14 @@ import logging
 from typing import Dict, Any, Optional
 from pathlib import Path
 
+from app.config import settings
+
 # Add the AI models directory to the Python path
 # Path: backend/app/services/ai_service.py -> go up to project root
-ai_models_path = Path(__file__).parent.parent.parent.parent / "ai" / "models"
+ai_models_path = Path(__file__).parent.parent.parent.parent / settings.model_path
 sys.path.append(str(ai_models_path))
 
-# Set the models directory for ModelManager
+# Set the models directory for ModelManager from settings
 MODELS_DIR = str(ai_models_path)
 
 # Optional: Torch inference support
@@ -54,7 +57,7 @@ class AIService:
         # Try to initialize Torch model if available
         try:
             if TorchImageClassifier is not None:
-                best_model_path = Path(MODELS_DIR) / "best_model.pth"
+                best_model_path = Path(MODELS_DIR) / settings.disease_detection_model
                 if best_model_path.exists():
                     # Load model info to get class names
                     try:

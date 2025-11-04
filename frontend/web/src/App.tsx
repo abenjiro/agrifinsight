@@ -11,6 +11,7 @@ import FarmDetailPage from './pages/FarmDetailPage'
 import { AIFeaturesPage } from './pages/AIFeaturesPage'
 import { AnalysisPage } from './pages/AnalysisPage'
 import { RecommendationsPage } from './pages/RecommendationsPage'
+import { PlantingRecommendationsPage } from './pages/PlantingRecommendationsPage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 
@@ -67,6 +68,13 @@ function App() {
       <Route path="/farms/:id" element={
         <ProtectedRoute>
           <FarmDetailPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/farms/:farmId/planting" element={
+        <ProtectedRoute>
+          <DashboardLayout>
+            <PlantingRecommendationsPage />
+          </DashboardLayout>
         </ProtectedRoute>
       } />
       <Route path="/analysis" element={

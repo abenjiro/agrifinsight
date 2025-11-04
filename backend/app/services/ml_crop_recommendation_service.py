@@ -1,6 +1,7 @@
 """
 ML-based Crop Recommendation Service
 Uses trained PyTorch model for intelligent crop recommendations
+Uses configuration from app.config for model paths
 """
 
 import torch
@@ -10,6 +11,8 @@ import json
 import logging
 from typing import Dict, Any, List, Optional
 from pathlib import Path
+
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -215,17 +218,19 @@ class MLCropRecommendationService:
 
     def __init__(self, model_path: str = None):
         """Initialize the ML crop recommendation service"""
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        # Use GPU if configured and available
+        use_gpu = settings.use_gpu and torch.cuda.is_available()
+        self.device = torch.device('cuda' if use_gpu else 'cpu')
         self.model = None
         self.scaler_mean = None
         self.scaler_scale = None
         self.crop_names = None
         self.encoders = None
 
-        # Default model path
+        # Default model path from settings
         if model_path is None:
             base_dir = Path(__file__).parent.parent.parent.parent
-            model_path = str(base_dir / "ai" / "models" / "crop_recommendation_model.pth")
+            model_path = str(base_dir / settings.model_path / settings.crop_recommendation_model)
 
         self.model_path = model_path
         self.load_model()
