@@ -185,7 +185,7 @@ export function AboutUsPage() {
                     <p className="text-gray-600 leading-relaxed text-lg mb-6">{item.desc}</p>
                     <div className="flex items-center gap-2 text-gray-700 font-semibold">
                       <CheckCircle2 className={`w-5 h-5 bg-gradient-to-r ${item.color} text-white rounded-full p-0.5`} />
-                      <span className="text-sm">Trusted by 50K+ farmers</span>
+                      <span className="text-sm">Trusted by farmers worldwide</span>
                     </div>
                   </div>
                 </div>
@@ -276,39 +276,23 @@ export function AboutUsPage() {
         <div className="relative max-w-7xl mx-auto px-6 lg:px-8 text-center text-white">
           <div className="inline-flex items-center gap-2 px-5 py-2 mb-6 bg-white/20 backdrop-blur-sm rounded-full border-2 border-white/30 shadow-lg">
             <Sparkles className="w-5 h-5 text-white animate-pulse" />
-            <span className="text-sm font-bold text-white">Join 50K+ Farmers Today</span>
+            <span className="text-sm font-bold text-white">Join Our Community</span>
           </div>
 
           <h2 className="text-4xl md:text-6xl font-extrabold mb-6">
-            Join Our Growing Community
+            Start Your Journey Today
           </h2>
           <p className="text-xl md:text-2xl text-white/90 mb-12 max-w-3xl mx-auto leading-relaxed">
             Be part of the agricultural revolution. Start using AgriFinSight
-            today and experience the power of AI-driven farming insights that increase yields by 35%.
+            today and experience the power of AI-driven farming insights.
           </p>
-
-          {/* Feature Pills */}
-          <div className="flex flex-wrap gap-4 justify-center mb-12">
-            <div className="flex items-center gap-2 px-5 py-3 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 shadow-lg">
-              <CheckCircle2 className="w-5 h-5 text-white" />
-              <span className="text-sm font-semibold">Free to Start</span>
-            </div>
-            <div className="flex items-center gap-2 px-5 py-3 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 shadow-lg">
-              <CheckCircle2 className="w-5 h-5 text-white" />
-              <span className="text-sm font-semibold">No Credit Card</span>
-            </div>
-            <div className="flex items-center gap-2 px-5 py-3 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 shadow-lg">
-              <CheckCircle2 className="w-5 h-5 text-white" />
-              <span className="text-sm font-semibold">Expert Support</span>
-            </div>
-          </div>
 
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <Link
               to="/register"
               className="group bg-white text-green-700 hover:bg-gray-50 px-10 py-5 text-lg font-bold rounded-2xl inline-flex items-center justify-center transition-all shadow-2xl hover:shadow-3xl hover:scale-110"
             >
-              Get Started Free
+              Get Started
               <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link
@@ -325,11 +309,6 @@ export function AboutUsPage() {
             <p className="text-white/70 text-sm mb-6">Trusted by farmers across Africa and beyond</p>
             <div className="flex flex-wrap items-center justify-center gap-6 text-white/60">
               <div className="text-center">
-                <div className="text-3xl font-bold text-white mb-1">50K+</div>
-                <div className="text-sm">Active Users</div>
-              </div>
-              <div className="hidden sm:block w-px h-12 bg-white/20"></div>
-              <div className="text-center">
                 <div className="text-3xl font-bold text-white mb-1">98%</div>
                 <div className="text-sm">Accuracy Rate</div>
               </div>
@@ -337,6 +316,11 @@ export function AboutUsPage() {
               <div className="text-center">
                 <div className="text-3xl font-bold text-white mb-1">24/7</div>
                 <div className="text-sm">Support</div>
+              </div>
+              <div className="hidden sm:block w-px h-12 bg-white/20"></div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-1">Global</div>
+                <div className="text-sm">Reach</div>
               </div>
             </div>
           </div>

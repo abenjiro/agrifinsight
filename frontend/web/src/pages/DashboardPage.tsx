@@ -12,6 +12,7 @@ import {
   ArrowRight
 } from 'lucide-react'
 import { farmService } from '../services/api'
+import api from '../services/api'
 
 interface Farm {
   id: number
@@ -37,8 +38,19 @@ interface DashboardStats {
   healthyPercentage: number
 }
 
+interface RecentAnalysis {
+  id: number
+  image_id: number
+  disease_detected: string
+  confidence_score: number
+  severity: string
+  created_at: string
+  filename?: string
+}
+
 export function DashboardPage() {
   const [farms, setFarms] = useState<Farm[]>([])
+  const [recentAnalysis, setRecentAnalysis] = useState<RecentAnalysis[]>([])
   const [stats, setStats] = useState<DashboardStats>({
     totalFarms: 0,
     totalSize: 0,
@@ -63,17 +75,55 @@ export function DashboardPage() {
       const farmsData = response.data || response
       setFarms(farmsData)
 
-      // Calculate stats
+      // Calculate farm stats
       const totalSize = farmsData.reduce((sum: number, farm: Farm) =>
         sum + (farm.size || 0), 0
       )
 
+      // Fetch analysis history to calculate stats
+      let analysisCount = 0
+      let issuesDetected = 0
+      let healthyCount = 0
+
+      try {
+        const analysisResponse = await api.get('/analysis/history')
+        const responseData = analysisResponse.data
+
+        // Handle different response formats
+        let analysisData = []
+        if (Array.isArray(responseData)) {
+          analysisData = responseData
+        } else if (responseData && Array.isArray(responseData.data)) {
+          analysisData = responseData.data
+        }
+
+        analysisCount = analysisData.length
+
+        // Set recent analysis (top 3)
+        setRecentAnalysis(analysisData.slice(0, 3))
+
+        // Calculate issues and healthy percentage
+        analysisData.forEach((analysis: any) => {
+          if (analysis.disease_detected && !analysis.disease_detected.toLowerCase().includes('healthy')) {
+            issuesDetected++
+          } else {
+            healthyCount++
+          }
+        })
+      } catch (error) {
+        console.error('Error fetching analysis data:', error)
+      }
+
+      const healthyPercentage = analysisCount > 0
+        ? Math.round((healthyCount / analysisCount) * 100)
+        : 0
+
       setStats({
         totalFarms: farmsData.length,
         totalSize: Math.round(totalSize),
-        analysisCount: 0, // TODO: Fetch from analysis endpoint
-        issuesDetected: 0, // TODO: Fetch from analysis endpoint
-        healthyPercentage: 95 // TODO: Calculate from analysis data
+        analysisCount,
+        issuesDetected,
+        healthyPercentage
       })
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
@@ -95,30 +145,6 @@ export function DashboardPage() {
 
   return (
     <>
-      {/* Welcome Banner */}
-      <div className="w-full max-w-full px-3 mb-6">
-        <div className="relative flex flex-col min-w-0 break-words bg-gradient-to-r from-green-600 to-blue-600 shadow-soft-xl rounded-2xl bg-clip-border">
-          <div className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h5 className="mb-2 font-bold text-white text-2xl">
-                  Welcome back, {userName}! 👋
-                </h5>
-                <p className="text-white/90 text-sm">
-                  Here's what's happening with your farms today
-                </p>
-              </div>
-              <Link
-                to="/ai-features"
-                className="hidden md:inline-flex items-center px-6 py-3 font-bold text-center text-green-600 uppercase align-middle transition-all bg-white rounded-lg cursor-pointer leading-pro text-xs ease-soft-in tracking-tight-soft shadow-soft-md hover:scale-102"
-              >
-                Explore AI Features
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Stats Cards Row */}
       <div className="w-full max-w-full px-3 mb-6 sm:w-1/2 sm:flex-none xl:mb-0 xl:w-1/4">
@@ -177,7 +203,9 @@ export function DashboardPage() {
                   <h5 className="mb-0 font-bold text-2xl">
                     {stats.issuesDetected}
                   </h5>
-                  <p className="text-xs text-green-600 mt-1">All resolved</p>
+                  <p className={`text-xs mt-1 ${stats.issuesDetected > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                    {stats.issuesDetected > 0 ? 'Needs attention' : 'No issues found'}
+                  </p>
                 </div>
               </div>
               <div className="px-3 text-right basis-1/3">
@@ -200,7 +228,17 @@ export function DashboardPage() {
                   <h5 className="mb-0 font-bold text-2xl">
                     {stats.healthyPercentage}%
                   </h5>
-                  <p className="text-xs text-green-600 mt-1">Excellent status</p>
+                  <p className={`text-xs mt-1 ${
+                    stats.healthyPercentage >= 80 ? 'text-green-600' :
+                    stats.healthyPercentage >= 60 ? 'text-yellow-600' :
+                    stats.healthyPercentage >= 40 ? 'text-orange-600' :
+                    'text-red-600'
+                  }`}>
+                    {stats.healthyPercentage >= 80 ? 'Excellent status' :
+                     stats.healthyPercentage >= 60 ? 'Good status' :
+                     stats.healthyPercentage >= 40 ? 'Fair status' :
+                     stats.analysisCount > 0 ? 'Needs attention' : 'No data yet'}
+                  </p>
                 </div>
               </div>
               <div className="px-3 text-right basis-1/3">
@@ -298,20 +336,67 @@ export function DashboardPage() {
             </div>
           </div>
           <div className="flex-auto p-4">
-            <div className="text-center py-12">
-              <div className="inline-block w-16 h-16 text-center rounded-xl bg-gray-100 mb-4">
-                <Camera className="w-8 h-8 text-gray-300 relative top-4 left-4" />
+            {recentAnalysis.length > 0 ? (
+              <div className="space-y-3">
+                {recentAnalysis.map((analysis) => {
+                  const isHealthy = analysis.disease_detected?.toLowerCase().includes('healthy')
+                  const severityColor =
+                    analysis.severity === 'High' || analysis.severity === 'Severe' ? 'text-red-600 bg-red-100' :
+                    analysis.severity === 'Moderate' || analysis.severity === 'Medium' ? 'text-orange-600 bg-orange-100' :
+                    analysis.severity === 'Low' || analysis.severity === 'Mild' ? 'text-yellow-600 bg-yellow-100' :
+                    'text-green-600 bg-green-100'
+
+                  return (
+                    <div
+                      key={analysis.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:shadow-soft-xs transition-all"
+                    >
+                      <div className="flex items-center flex-1">
+                        <div className={`w-10 h-10 ${isHealthy ? 'bg-gradient-to-tl from-green-600 to-lime-400' : 'bg-gradient-to-tl from-red-600 to-orange-400'} rounded-lg flex items-center justify-center mr-3`}>
+                          {isHealthy ? (
+                            <CheckCircle className="w-5 h-5 text-white" />
+                          ) : (
+                            <AlertTriangle className="w-5 h-5 text-white" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h6 className="mb-0 leading-normal text-xs font-semibold">
+                            {analysis.disease_detected || 'Unknown'}
+                          </h6>
+                          <p className="mb-0 leading-tight text-xs text-slate-400">
+                            {analysis.filename || `Analysis #${analysis.id}`} • {Math.round(analysis.confidence_score * 100)}% confidence
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`inline-block px-2 py-1 text-xs font-semibold text-center rounded-lg ${severityColor}`}>
+                        {analysis.severity || 'N/A'}
+                      </span>
+                    </div>
+                  )
+                })}
+                <Link
+                  to="/analysis"
+                  className="block text-center text-xs font-semibold text-blue-600 hover:text-blue-700 transition pt-2"
+                >
+                  View All Analysis <ArrowRight className="w-3 h-3 inline ml-1" />
+                </Link>
               </div>
-              <p className="text-sm font-medium text-gray-500 mb-2">No analysis yet</p>
-              <p className="text-xs text-gray-400 mb-4">Upload crop images to get AI-powered insights</p>
-              <Link
-                to="/analysis"
-                className="inline-block px-6 py-2.5 font-bold text-center text-white uppercase align-middle transition-all bg-gradient-to-tl from-blue-600 to-cyan-400 rounded-lg cursor-pointer leading-pro text-xs ease-soft-in tracking-tight-soft shadow-soft-md hover:scale-102 hover:shadow-soft-xs active:opacity-85"
-              >
-                <Upload className="w-3 h-3 inline mr-2" />
-                Start Analysis
-              </Link>
-            </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="inline-block w-16 h-16 text-center rounded-xl bg-gray-100 mb-4">
+                  <Camera className="w-8 h-8 text-gray-300 relative top-4 left-4" />
+                </div>
+                <p className="text-sm font-medium text-gray-500 mb-2">No analysis yet</p>
+                <p className="text-xs text-gray-400 mb-4">Upload crop images to get AI-powered insights</p>
+                <Link
+                  to="/analysis"
+                  className="inline-block px-6 py-2.5 font-bold text-center text-white uppercase align-middle transition-all bg-gradient-to-tl from-blue-600 to-cyan-400 rounded-lg cursor-pointer leading-pro text-xs ease-soft-in tracking-tight-soft shadow-soft-md hover:scale-102 hover:shadow-soft-xs active:opacity-85"
+                >
+                  <Upload className="w-3 h-3 inline mr-2" />
+                  Start Analysis
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>

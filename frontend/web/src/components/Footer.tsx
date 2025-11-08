@@ -15,7 +15,7 @@ export default function Footer() {
               <span className="text-xl font-bold">AgriFinSight</span>
             </div>
             <p className="text-gray-300 mb-4 max-w-md">
-              Empowering farmers with AI-driven insights for better crop management, 
+              Empowering farmers with AI-driven insights for better crop management,
               disease detection, and sustainable agriculture practices.
             </p>
             <div className="flex space-x-4">

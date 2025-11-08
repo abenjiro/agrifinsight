@@ -189,7 +189,7 @@ export function HomePage() {
                 to="/register"
                 className="group bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-4 text-lg rounded-xl inline-flex items-center justify-center transition-all shadow-lg hover:shadow-xl hover:scale-105"
               >
-                Get Started Free
+                Get Started
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
@@ -292,32 +292,16 @@ export function HomePage() {
             Ready to revolutionize your farming?
           </h2>
           <p className="text-xl text-white/90 mb-10 max-w-2xl mx-auto">
-            Join 50,000+ farmers already using AgriFinSight to increase
-            their yields by up to 35% with AI-powered insights.
+            Join thousands of farmers already using AgriFinSight to increase
+            their yields with AI-powered insights.
           </p>
-
-          {/* Feature Pills */}
-          <div className="flex flex-wrap gap-4 justify-center mb-10">
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-              <CheckCircle2 className="w-4 h-4 text-white" />
-              <span className="text-sm font-semibold">Free Forever Plan</span>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-              <CheckCircle2 className="w-4 h-4 text-white" />
-              <span className="text-sm font-semibold">No Credit Card Required</span>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-              <CheckCircle2 className="w-4 h-4 text-white" />
-              <span className="text-sm font-semibold">24/7 Support</span>
-            </div>
-          </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/register"
               className="group bg-white text-green-700 hover:bg-gray-50 px-10 py-4 text-lg font-bold rounded-xl inline-flex items-center justify-center transition-all shadow-2xl hover:shadow-3xl hover:scale-105"
             >
-              Start Free Now
+              Get Started
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link

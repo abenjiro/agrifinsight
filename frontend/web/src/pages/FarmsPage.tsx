@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Plus, MapPin, Ruler, Sprout, Edit2, Trash2, X, Navigation, Cloud, Droplets, Thermometer, Map, ChevronRight, ChevronLeft, Check, Eye, Calendar } from 'lucide-react'
 import { showSuccess, showError, showConfirm } from '../utils/sweetalert'
 import { farmService } from '../services/api'
+import { LocationSelector } from '../components/LocationSelector'
 
 interface Farm {
   id: number
@@ -614,27 +615,20 @@ export function FarmsPage() {
                   {/* Step 2: Location - Auto-captures environment */}
                   {currentStep === 2 && (
                     <div className="space-y-4">
-                      <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg p-4">
-                        <div className="flex items-start gap-3">
-                          <Map className="w-6 h-6 text-blue-600 mt-0.5 flex-shrink-0" />
-                          <div className="flex-1">
-                            <p className="text-sm font-bold text-blue-900 mb-2">
-                              📍 Add Farm Location
-                            </p>
-                            <p className="text-xs text-blue-800 mb-3">
-                              Click "Use My Location" to automatically capture GPS coordinates and environmental data (weather, climate, soil, elevation). Or enter coordinates manually.
-                            </p>
-                            <button
-                              type="button"
-                              onClick={getCurrentLocation}
-                              disabled={enriching}
-                              className="inline-block px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-green-600 rounded-lg hover:from-blue-700 hover:to-green-700 transition disabled:opacity-50"
-                            >
-                              {enriching ? 'Capturing Data...' : '📍 Use My Location'}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                      <LocationSelector
+                        latitude={formData.latitude}
+                        longitude={formData.longitude}
+                        onLocationChange={(lat, lng) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            latitude: lat.toString(),
+                            longitude: lng.toString()
+                          }))
+                          enrichLocationData(lat, lng)
+                        }}
+                        onUseCurrentLocation={getCurrentLocation}
+                        enriching={enriching}
+                      />
 
                       <div className="grid grid-cols-3 gap-4">
                         <div>
