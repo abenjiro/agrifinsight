@@ -23,6 +23,9 @@ class PlantingService:
             'min_soil_temp': 16,
             'optimal_soil_temp': 21,
             'min_rainfall_7days': 50,
+            'min_annual_rainfall': 500,  # mm per year
+            'optimal_annual_rainfall': 800,
+            'optimal_temp_range': (21, 30),
             'days_to_maturity': 120
         },
         'rice': {
@@ -31,6 +34,9 @@ class PlantingService:
             'min_soil_temp': 18,
             'optimal_soil_temp': 25,
             'min_rainfall_7days': 100,
+            'min_annual_rainfall': 1000,
+            'optimal_annual_rainfall': 1500,
+            'optimal_temp_range': (20, 35),
             'days_to_maturity': 150
         },
         'cassava': {
@@ -39,6 +45,9 @@ class PlantingService:
             'min_soil_temp': 18,
             'optimal_soil_temp': 27,
             'min_rainfall_7days': 30,
+            'min_annual_rainfall': 600,
+            'optimal_annual_rainfall': 1000,
+            'optimal_temp_range': (25, 29),
             'days_to_maturity': 300
         },
         'tomato': {
@@ -47,6 +56,9 @@ class PlantingService:
             'min_soil_temp': 15,
             'optimal_soil_temp': 21,
             'min_rainfall_7days': 40,
+            'min_annual_rainfall': 400,
+            'optimal_annual_rainfall': 700,
+            'optimal_temp_range': (18, 27),
             'days_to_maturity': 90
         },
         'soybean': {
@@ -55,6 +67,9 @@ class PlantingService:
             'min_soil_temp': 18,
             'optimal_soil_temp': 25,
             'min_rainfall_7days': 50,
+            'min_annual_rainfall': 600,
+            'optimal_annual_rainfall': 900,
+            'optimal_temp_range': (20, 30),
             'days_to_maturity': 100
         },
         'groundnut': {
@@ -63,6 +78,9 @@ class PlantingService:
             'min_soil_temp': 18,
             'optimal_soil_temp': 25,
             'min_rainfall_7days': 50,
+            'min_annual_rainfall': 500,
+            'optimal_annual_rainfall': 750,
+            'optimal_temp_range': (22, 30),
             'days_to_maturity': 120
         }
     }
@@ -94,6 +112,9 @@ class PlantingService:
         # Get soil suitability
         soil_suitability = self._check_soil_suitability(crop_type, farm_data)
 
+        # Get climate suitability (NEW!)
+        climate_suitability = self._check_climate_suitability(crop_type, farm_data)
+
         # Calculate estimated planting date
         planting_date = self._calculate_optimal_planting_date(
             crop_type,
@@ -109,6 +130,7 @@ class PlantingService:
             weather_advice,
             seasonal_advice,
             soil_suitability,
+            climate_suitability,
             ml_suitability
         )
 
@@ -128,6 +150,7 @@ class PlantingService:
             'weather_analysis': weather_advice['planting_advice'],
             'seasonal_analysis': seasonal_advice,
             'soil_analysis': soil_suitability,
+            'climate_analysis': climate_suitability,  # NEW! Shows farm-specific climate fit
             'estimated_harvest_date': self._calculate_harvest_date(
                 planting_date['recommended'],
                 crop_type
@@ -147,6 +170,7 @@ class PlantingService:
         Compare planting recommendations for multiple crops
         """
         recommendations = []
+        errors = []
 
         for crop in crop_types:
             try:
@@ -160,12 +184,16 @@ class PlantingService:
                     'summary': rec['summary']
                 })
             except Exception as e:
-                logger.error(f"Error getting recommendation for {crop}: {e}")
+                error_msg = f"Error getting recommendation for {crop}: {str(e)}"
+                logger.error(error_msg)
+                errors.append({'crop': crop, 'error': str(e)})
+                # Print to console for debugging
+                print(f"❌ {error_msg}")
 
         # Sort by suitability score
         recommendations.sort(key=lambda x: x['suitability_score'], reverse=True)
 
-        return {
+        result = {
             'farm_location': {
                 'latitude': farm_data.get('latitude'),
                 'longitude': farm_data.get('longitude')
@@ -174,6 +202,13 @@ class PlantingService:
             'top_recommendation': recommendations[0] if recommendations else None,
             'generated_at': datetime.now().isoformat()
         }
+
+        # Add errors for debugging if any occurred
+        if errors:
+            result['errors'] = errors
+            logger.warning(f"Generated {len(recommendations)} recommendations with {len(errors)} errors")
+
+        return result
 
     def _check_seasonal_timing(self, crop_type: str, farm_data: Dict) -> Dict:
         """
@@ -225,7 +260,7 @@ class PlantingService:
         Check soil conditions for crop suitability
         """
         soil_ph = farm_data.get('soil_ph')
-        soil_type = farm_data.get('soil_type', '').lower()
+        soil_type = (farm_data.get('soil_type') or '').lower()
 
         # Optimal pH ranges for crops
         ph_requirements = {
@@ -288,6 +323,78 @@ class PlantingService:
             'soil_type': soil_type
         }
 
+    def _check_climate_suitability(self, crop_type: str, farm_data: Dict) -> Dict:
+        """
+        Check climate suitability based on farm's avg temperature and rainfall
+        THIS IS THE KEY METHOD THAT MAKES RECOMMENDATIONS UNIQUE PER FARM!
+        """
+        avg_temp = farm_data.get('avg_temperature')
+        avg_rainfall = farm_data.get('avg_annual_rainfall')
+
+        crop_requirements = self.CROP_PLANTING_WINDOWS.get(crop_type.lower(), {})
+        optimal_temp_range = crop_requirements.get('optimal_temp_range', (20, 30))
+        min_rainfall = crop_requirements.get('min_annual_rainfall', 500)
+        optimal_rainfall = crop_requirements.get('optimal_annual_rainfall', 1000)
+
+        strengths = []
+        concerns = []
+        score = 0
+
+        # Temperature scoring (0-50 points)
+        if avg_temp:
+            min_temp, max_temp = optimal_temp_range
+            if min_temp <= avg_temp <= max_temp:
+                score += 50
+                strengths.append(f"Temperature ideal ({avg_temp}°C) for {crop_type}")
+            elif min_temp - 3 <= avg_temp <= max_temp + 3:
+                score += 35
+                strengths.append(f"Temperature acceptable ({avg_temp}°C)")
+            else:
+                score += 15
+                if avg_temp < min_temp:
+                    concerns.append(f"Temperature too low ({avg_temp}°C, need {min_temp}-{max_temp}°C)")
+                else:
+                    concerns.append(f"Temperature too high ({avg_temp}°C, ideal {min_temp}-{max_temp}°C)")
+
+        # Rainfall scoring (0-50 points)
+        if avg_rainfall:
+            if avg_rainfall >= optimal_rainfall * 0.9:
+                score += 50
+                strengths.append(f"Excellent rainfall ({avg_rainfall}mm/year)")
+            elif avg_rainfall >= min_rainfall:
+                score += 35
+                ratio = (avg_rainfall / optimal_rainfall) * 100
+                strengths.append(f"Adequate rainfall ({avg_rainfall}mm/year, {ratio:.0f}% of optimal)")
+            else:
+                score += 15
+                concerns.append(f"Low rainfall ({avg_rainfall}mm/year, need ≥{min_rainfall}mm)")
+
+        # Overall assessment
+        if score >= 80:
+            suitability = 'excellent'
+            message = f"{crop_type} is extremely well-suited to this farm's climate"
+        elif score >= 60:
+            suitability = 'good'
+            message = f"{crop_type} is well-suited to this farm's climate"
+        elif score >= 40:
+            suitability = 'moderate'
+            message = f"{crop_type} can grow but may need extra care"
+        else:
+            suitability = 'poor'
+            message = f"{crop_type} not ideal for this farm's climate"
+
+        return {
+            'suitability': suitability,
+            'score': score,
+            'message': message,
+            'strengths': strengths,
+            'concerns': concerns,
+            'farm_avg_temp': avg_temp,
+            'farm_avg_rainfall': avg_rainfall,
+            'crop_temp_range': optimal_temp_range,
+            'crop_rainfall_need': optimal_rainfall
+        }
+
     def _get_ml_suitability(self, farm_data: Dict, crop_type: str) -> Optional[Dict]:
         """
         Get ML-based crop suitability score
@@ -317,55 +424,71 @@ class PlantingService:
         weather_advice: Dict,
         seasonal_advice: Dict,
         soil_suitability: Dict,
+        climate_suitability: Dict,
         ml_suitability: Optional[Dict]
     ) -> Dict:
         """
         Calculate overall planting recommendation score (0-100)
+        NOW INCLUDES FARM-SPECIFIC CLIMATE DATA!
         """
         score = 0
         factors = []
 
-        # Weather score (40%)
+        # Weather score (25% - reduced to make room for climate)
         weather_rec = weather_advice['planting_advice']['recommendation']
         if weather_rec == 'plant_now':
-            score += 40
+            score += 25
             factors.append("Weather optimal")
         elif weather_rec == 'plant_with_caution':
-            score += 25
+            score += 15
             factors.append("Weather acceptable")
         else:
-            score += 10
+            score += 5
             factors.append("Weather unfavorable")
 
-        # Seasonal score (30%)
+        # Seasonal score (20% - reduced)
         seasonal_status = seasonal_advice['status']
         if seasonal_status == 'optimal':
-            score += 30
+            score += 20
             factors.append("Peak planting season")
         elif seasonal_status == 'good':
-            score += 20
+            score += 13
             factors.append("Acceptable season")
         else:
-            score += 5
+            score += 3
             factors.append("Off-season")
 
-        # Soil score (20%)
+        # Climate suitability score (30% - NEW! This makes farms different!)
+        climate_score = climate_suitability['score']
+        # Climate score is already 0-100, convert to 0-30
+        score += (climate_score / 100) * 30
+        climate_suit = climate_suitability['suitability']
+        if climate_suit == 'excellent':
+            factors.append("Climate excellent")
+        elif climate_suit == 'good':
+            factors.append("Climate suitable")
+        elif climate_suit == 'moderate':
+            factors.append("Climate moderate")
+        else:
+            factors.append("Climate challenging")
+
+        # Soil score (15% - reduced)
         soil_suit = soil_suitability['suitability']
         if soil_suit == 'high':
-            score += 20
+            score += 15
             factors.append("Soil ideal")
         elif soil_suit == 'medium':
-            score += 12
+            score += 9
             factors.append("Soil acceptable")
         else:
-            score += 5
+            score += 3
             factors.append("Soil needs amendment")
 
         # ML model score (10% - if available)
         if ml_suitability:
             ml_score = ml_suitability['suitability_score']
             score += (ml_score / 100) * 10
-            factors.append(f"ML model: {ml_score:.0f}% suitable")
+            factors.append(f"ML: {ml_score:.0f}%")
         else:
             score += 5  # Default if ML not available
 

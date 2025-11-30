@@ -7,12 +7,32 @@ interface CropRecommendationsProps {
   farmId: number
 }
 
+// Pure helper functions - moved outside component for better performance
+const getSuitabilityColor = (score: number) => {
+  if (score >= 75) return 'text-green-600 bg-green-50'
+  if (score >= 50) return 'text-yellow-600 bg-yellow-50'
+  return 'text-orange-600 bg-orange-50'
+}
+
+const getDifficultyBadge = (difficulty?: string) => {
+  const colors = {
+    easy: 'bg-green-100 text-green-800',
+    moderate: 'bg-yellow-100 text-yellow-800',
+    difficult: 'bg-red-100 text-red-800'
+  }
+  return colors[difficulty as keyof typeof colors] || 'bg-gray-100 text-gray-800'
+}
+
 export default function CropRecommendations({ farmId }: CropRecommendationsProps) {
   const [recommendations, setRecommendations] = useState<CropRecommendation[]>([])
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [loadError, setLoadError] = useState('')
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [generating, setGenerating] = useState(false)
+  const [generateError, setGenerateError] = useState('')
+
+  // Derive the error to display from both error states
+  const error = loadError || generateError
 
   useEffect(() => {
     loadRecommendations()
@@ -20,7 +40,7 @@ export default function CropRecommendations({ farmId }: CropRecommendationsProps
 
   const loadRecommendations = async () => {
     setLoading(true)
-    setError('')
+    setLoadError('')
     try {
       const data = await cropRecommendationService.getRecommendations(farmId)
       setRecommendations(data)
@@ -33,30 +53,15 @@ export default function CropRecommendations({ farmId }: CropRecommendationsProps
 
   const handleGenerateRecommendations = async () => {
     setGenerating(true)
-    setError('')
+    setGenerateError('')
     try {
       const data = await cropRecommendationService.generateRecommendations(farmId)
       setRecommendations(data)
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to generate recommendations')
+      setGenerateError(err.response?.data?.detail || 'Failed to generate recommendations')
     } finally {
       setGenerating(false)
     }
-  }
-
-  const getSuitabilityColor = (score: number) => {
-    if (score >= 75) return 'text-green-600 bg-green-50'
-    if (score >= 50) return 'text-yellow-600 bg-yellow-50'
-    return 'text-orange-600 bg-orange-50'
-  }
-
-  const getDifficultyBadge = (difficulty?: string) => {
-    const colors = {
-      easy: 'bg-green-100 text-green-800',
-      moderate: 'bg-yellow-100 text-yellow-800',
-      difficult: 'bg-red-100 text-red-800'
-    }
-    return colors[difficulty as keyof typeof colors] || 'bg-gray-100 text-gray-800'
   }
 
   if (loading) {

@@ -72,7 +72,7 @@ export function DashboardPage() {
 
       // Fetch farms using farmService
       const response = await farmService.getFarms()
-      const farmsData = response.data || response
+      const farmsData: any = response.data || response
       setFarms(farmsData)
 
       // Calculate farm stats

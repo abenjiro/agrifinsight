@@ -42,6 +42,15 @@ class User(Base):
     crop_images = relationship("CropImage", back_populates="user")
     analysis_results = relationship("AnalysisResult", back_populates="user")
 
+class TokenBlacklist(Base):
+    """Token blacklist for logout functionality"""
+    __tablename__ = "token_blacklist"
+
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String(500), unique=True, index=True, nullable=False)
+    blacklisted_at = Column(DateTime(timezone=True), server_default=func.now())
+    expires_at = Column(DateTime(timezone=True), nullable=False)  # Token expiry time
+
 class Farm(Base):
     """Farm model with comprehensive geospatial data"""
     __tablename__ = "farms"

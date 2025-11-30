@@ -50,6 +50,37 @@ api.interceptors.response.use(
   }
 )
 
+// Generic API wrapper helper
+type UrlFunction<TArgs extends any[]> = (...args: TArgs) => string
+type ResponseTransformer<TData, TResult> = (response: TData) => TResult
+
+function wrapApi<TArgs extends any[], TResult>(
+  urlOrFunction: string | UrlFunction<TArgs>,
+  transformer?: ResponseTransformer<any, TResult>,
+  method: 'get' | 'post' | 'put' | 'delete' = 'get'
+) {
+  return async (...args: TArgs): Promise<TResult> => {
+    const url = typeof urlOrFunction === 'function' ? urlOrFunction(...args) : urlOrFunction
+    const response = await api[method](url)
+    return transformer ? transformer(response) : response.data
+  }
+}
+
+function wrapApiWithBody<TArgs extends any[], TBody, TResult>(
+  urlOrFunction: string | ((...args: TArgs) => string),
+  transformer?: ResponseTransformer<any, TResult>,
+  method: 'post' | 'put' = 'post'
+) {
+  return async (...args: [...TArgs, TBody]): Promise<TResult> => {
+    const bodyIndex = args.length - 1
+    const body = args[bodyIndex]
+    const urlArgs = args.slice(0, bodyIndex) as TArgs
+    const url = typeof urlOrFunction === 'function' ? urlOrFunction(...urlArgs) : urlOrFunction
+    const response = await api[method](url, body)
+    return transformer ? transformer(response) : response.data
+  }
+}
+
 export const authService = {
   async login(credentials: LoginCredentials): Promise<ApiResponse<{ user: User; token: string }>> {
     const response = await api.post('/auth/login', credentials)
@@ -131,72 +162,81 @@ export const recommendationService = {
 }
 
 export const cropService = {
-  async getCropTypes(): Promise<string[]> {
-    const response = await api.get('/crops/types')
-    return response.data.crop_types
-  },
+  getCropTypes: wrapApi<[], string[]>(
+    '/crops/types',
+    (response) => response.data.crop_types
+  ),
 
-  async getFarmCrops(farmId: number): Promise<Crop[]> {
-    const response = await api.get(`/farms/${farmId}/crops`)
-    return response.data
-  },
+  getFarmCrops: wrapApi<[number], Crop[]>(
+    (farmId) => `/farms/${farmId}/crops`,
+    (response) => response.data
+  ),
 
-  async createCrop(farmId: number, data: CropCreate): Promise<Crop> {
-    const response = await api.post(`/farms/${farmId}/crops`, data)
-    return response.data
-  },
+  createCrop: wrapApiWithBody<[number], CropCreate, Crop>(
+    (farmId) => `/farms/${farmId}/crops`,
+    (response) => response.data,
+    'post'
+  ),
 
-  async getCrop(cropId: number): Promise<Crop> {
-    const response = await api.get(`/crops/${cropId}`)
-    return response.data
-  },
+  getCrop: wrapApi<[number], Crop>(
+    (cropId) => `/crops/${cropId}`,
+    (response) => response.data
+  ),
 
-  async updateCrop(cropId: number, data: Partial<CropCreate>): Promise<Crop> {
-    const response = await api.put(`/crops/${cropId}`, data)
-    return response.data
-  },
+  updateCrop: wrapApiWithBody<[number], Partial<CropCreate>, Crop>(
+    (cropId) => `/crops/${cropId}`,
+    (response) => response.data,
+    'put'
+  ),
 
-  async deleteCrop(cropId: number): Promise<void> {
-    await api.delete(`/crops/${cropId}`)
-  },
+  deleteCrop: wrapApi<[number], void>(
+    (cropId) => `/crops/${cropId}`,
+    undefined,
+    'delete'
+  ),
 }
 
 export const animalService = {
-  async getFarmAnimals(farmId: number): Promise<Animal[]> {
-    const response = await api.get(`/farms/${farmId}/animals`)
-    return response.data
-  },
+  getFarmAnimals: wrapApi<[number], Animal[]>(
+    (farmId) => `/farms/${farmId}/animals`,
+    (response) => response.data
+  ),
 
-  async createAnimal(farmId: number, data: AnimalCreate): Promise<Animal> {
-    const response = await api.post(`/farms/${farmId}/animals`, data)
-    return response.data
-  },
+  createAnimal: wrapApiWithBody<[number], AnimalCreate, Animal>(
+    (farmId) => `/farms/${farmId}/animals`,
+    (response) => response.data,
+    'post'
+  ),
 
-  async getAnimal(animalId: number): Promise<Animal> {
-    const response = await api.get(`/animals/${animalId}`)
-    return response.data
-  },
+  getAnimal: wrapApi<[number], Animal>(
+    (animalId) => `/animals/${animalId}`,
+    (response) => response.data
+  ),
 
-  async updateAnimal(animalId: number, data: Partial<AnimalCreate>): Promise<Animal> {
-    const response = await api.put(`/animals/${animalId}`, data)
-    return response.data
-  },
+  updateAnimal: wrapApiWithBody<[number], Partial<AnimalCreate>, Animal>(
+    (animalId) => `/animals/${animalId}`,
+    (response) => response.data,
+    'put'
+  ),
 
-  async deleteAnimal(animalId: number): Promise<void> {
-    await api.delete(`/animals/${animalId}`)
-  },
+  deleteAnimal: wrapApi<[number], void>(
+    (animalId) => `/animals/${animalId}`,
+    undefined,
+    'delete'
+  ),
 }
 
 export const cropRecommendationService = {
-  async generateRecommendations(farmId: number): Promise<CropRecommendation[]> {
-    const response = await api.post(`/farms/${farmId}/crop-recommendations`)
-    return response.data
-  },
+  generateRecommendations: wrapApi<[number], CropRecommendation[]>(
+    (farmId) => `/farms/${farmId}/crop-recommendations`,
+    (response) => response.data,
+    'post'
+  ),
 
-  async getRecommendations(farmId: number): Promise<CropRecommendation[]> {
-    const response = await api.get(`/farms/${farmId}/crop-recommendations`)
-    return response.data
-  },
+  getRecommendations: wrapApi<[number], CropRecommendation[]>(
+    (farmId) => `/farms/${farmId}/crop-recommendations`,
+    (response) => response.data
+  ),
 }
 
 export default api

@@ -10,10 +10,11 @@ from typing import Optional
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 
-from app.models.database import User
+from app.models.database import User, TokenBlacklist
 from app.database import get_db
 from app.config import settings
 from app.schemas import UserCreate, User as UserSchema, Token
+from app.services.db_service import token_blacklist_service
 
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
@@ -68,6 +69,14 @@ async def get_current_user_from_token(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    # Check if token is blacklisted using service layer
+    if token_blacklist_service.is_blacklisted(db, token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been revoked",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
@@ -221,14 +230,36 @@ async def refresh_token_endpoint(
     }
 
 @router.post("/logout")
-async def logout(current_user: User = Depends(get_current_user_from_token)):
-    """Logout user and invalidate token"""
-    # In a production environment, you would add the token to a blacklist
-    # For now, the client will handle token removal
-    return {
-        "message": "Successfully logged out",
-        "success": True
-    }
+async def logout(
+    token: str = Depends(oauth2_scheme),
+    current_user: User = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db)
+):
+    """Logout user and invalidate token by adding to blacklist"""
+    try:
+        # Decode token to get expiration time
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        exp_timestamp = payload.get("exp")
+
+        if exp_timestamp:
+            expires_at = datetime.fromtimestamp(exp_timestamp)
+        else:
+            # If no expiration, set a default (e.g., 24 hours from now)
+            expires_at = datetime.utcnow() + timedelta(hours=24)
+
+        # Add token to blacklist using service layer
+        token_blacklist_service.blacklist_token(db, token, expires_at)
+
+        return {
+            "message": "Successfully logged out",
+            "success": True
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Logout failed: {str(e)}"
+        )
 
 @router.get("/me", response_model=UserSchema)
 async def get_current_user(current_user: User = Depends(get_current_user_from_token)):

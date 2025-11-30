@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react'
+import { createContext, useContext, useReducer, ReactNode } from 'react'
 
 interface SidebarContextType {
   isOpen: boolean
@@ -8,12 +8,28 @@ interface SidebarContextType {
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined)
 
-export function SidebarProvider({ children }: { children: ReactNode }) {
-  const [isOpen, setIsOpen] = useState(false)
+// Reducer function - stable and pure
+type SidebarAction =
+  | { type: 'TOGGLE' }
+  | { type: 'SET', payload: boolean }
 
-  const toggleSidebar = () => {
-    setIsOpen(prev => !prev)
+const sidebarReducer = (state: boolean, action: SidebarAction): boolean => {
+  switch (action.type) {
+    case 'TOGGLE':
+      return !state
+    case 'SET':
+      return action.payload
+    default:
+      return state
   }
+}
+
+export function SidebarProvider({ children }: { children: ReactNode }) {
+  const [isOpen, dispatch] = useReducer(sidebarReducer, false)
+
+  // These functions are now stable because dispatch is stable
+  const toggleSidebar = () => dispatch({ type: 'TOGGLE' })
+  const setIsOpen = (value: boolean) => dispatch({ type: 'SET', payload: value })
 
   return (
     <SidebarContext.Provider value={{ isOpen, setIsOpen, toggleSidebar }}>

@@ -18,6 +18,7 @@ export default function FarmDetailPage() {
   const [loading, setLoading] = useState(true)
   const [showAddCropModal, setShowAddCropModal] = useState(false)
   const [showAddAnimalModal, setShowAddAnimalModal] = useState(false)
+  const [activeTab, setActiveTab] = useState<'crops' | 'animals'>('crops')
 
   useEffect(() => {
     if (id) {
@@ -163,23 +164,6 @@ export default function FarmDetailPage() {
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="mt-6 flex flex-wrap gap-3">
-            <button
-              onClick={() => navigate(`/farms/${id}/planting`)}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition shadow-md"
-            >
-              <Calendar className="w-4 h-4" />
-              Planting Recommendations
-            </button>
-            <button
-              onClick={() => {/* TODO: Add weather modal or navigate to weather page */}}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition shadow-md"
-            >
-              <Cloud className="w-4 h-4" />
-              View Weather Forecast
-            </button>
-          </div>
         </div>
 
         {/* Weather Widget */}
@@ -188,24 +172,74 @@ export default function FarmDetailPage() {
         )}
 
         {/* Main Content Grid: Crops & Animals (Main Focus) + Recommendations (Sidebar) */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column: Crops & Animals (2/3 width) */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Crops Section */}
+        <div className={`grid grid-cols-1 gap-6 ${activeTab === 'crops' ? 'lg:grid-cols-3' : ''}`}>
+          {/* Left Column: Crops & Animals (2/3 width when crops, full width when animals) */}
+          <div className={`space-y-6 ${activeTab === 'crops' ? 'lg:col-span-2' : ''}`}>
+            {/* Tabs Navigation */}
             <div className="bg-white rounded-lg shadow">
-              <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Sprout className="h-6 w-6 text-green-600" />
-                  <h2 className="text-xl font-semibold text-gray-900">Crops</h2>
+              <div className="border-b border-gray-200">
+                <div className="flex">
+                  <button
+                    onClick={() => setActiveTab('crops')}
+                    className={`flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                      activeTab === 'crops'
+                        ? 'border-green-600 text-green-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <Sprout className="h-5 w-5" />
+                    Crops ({crops.length})
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('animals')}
+                    className={`flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                      activeTab === 'animals'
+                        ? 'border-green-600 text-green-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <PawPrint className="h-5 w-5" />
+                    Animals ({animals.reduce((sum, a) => sum + a.quantity, 0)})
+                  </button>
                 </div>
-                <button
-                  onClick={() => setShowAddCropModal(true)}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Crop
-                </button>
               </div>
+
+              {/* Tab Content */}
+              {activeTab === 'crops' && (
+                <>
+                  <div className="p-6 border-b border-gray-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <Sprout className="h-6 w-6 text-green-600" />
+                        <h2 className="text-xl font-semibold text-gray-900">Crops</h2>
+                      </div>
+                      <button
+                        onClick={() => setShowAddCropModal(true)}
+                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Crop
+                      </button>
+                    </div>
+
+                    {/* Quick Actions for Crops */}
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={() => navigate(`/farms/${id}/planting`)}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition shadow-md"
+                      >
+                        <Calendar className="w-4 h-4" />
+                        Planting Recommendations
+                      </button>
+                      <button
+                        onClick={() => {/* TODO: Add weather modal or navigate to weather page */}}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition shadow-md"
+                      >
+                        <Cloud className="w-4 h-4" />
+                        View Weather Forecast
+                      </button>
+                    </div>
+                  </div>
 
               <div className="p-6">
                 {crops.length === 0 ? (
@@ -274,23 +308,25 @@ export default function FarmDetailPage() {
                   </div>
                 )}
               </div>
-            </div>
+                </>
+              )}
 
-            {/* Animals Section */}
-            <div className="bg-white rounded-lg shadow">
-              <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <PawPrint className="h-6 w-6 text-green-600" />
-                  <h2 className="text-xl font-semibold text-gray-900">Animals</h2>
-                </div>
-                <button
-                  onClick={() => setShowAddAnimalModal(true)}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Animals
-                </button>
-              </div>
+              {/* Animals Tab Content */}
+              {activeTab === 'animals' && (
+                <>
+                  <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <PawPrint className="h-6 w-6 text-green-600" />
+                      <h2 className="text-xl font-semibold text-gray-900">Animals</h2>
+                    </div>
+                    <button
+                      onClick={() => setShowAddAnimalModal(true)}
+                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Animals
+                    </button>
+                  </div>
 
               <div className="p-6">
                 {animals.length === 0 ? (
@@ -353,13 +389,18 @@ export default function FarmDetailPage() {
                   </div>
                 )}
               </div>
+                </>
+              )}
             </div>
           </div>
 
           {/* Right Column: AI Recommendations (1/3 width - Compact Sidebar) */}
-          <div className="lg:col-span-1">
-            {id && <CropRecommendations farmId={parseInt(id)} />}
-          </div>
+          {/* Only show recommendations for crops tab */}
+          {activeTab === 'crops' && (
+            <div className="lg:col-span-1">
+              {id && <CropRecommendations farmId={parseInt(id)} />}
+            </div>
+          )}
         </div>
       </div>
 

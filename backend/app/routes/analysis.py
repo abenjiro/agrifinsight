@@ -13,14 +13,23 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.services.ai_service import AIService
+from app.ml_models import get_disease_detector
 from app.database import get_db
 from app.models.database import CropImage, AnalysisResult, User
 from app.routes.auth import get_current_user
 
 router = APIRouter(prefix="/api/analysis", tags=["image analysis"])
 
-# Initialize AI service
+# Initialize AI service (legacy)
 ai_service = AIService()
+
+# Get disease detector (new trained model)
+try:
+    disease_detector = get_disease_detector()
+    print("✅ Disease detection model loaded successfully")
+except Exception as e:
+    print(f"⚠️ Warning: Could not load disease detection model: {e}")
+    disease_detector = None
 
 @router.post("/upload")
 async def upload_image(
@@ -61,8 +70,41 @@ async def upload_image(
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        # Analyze image with AI
-        analysis_result = ai_service.analyze_crop_health(str(file_path))
+        # Analyze image with new trained model if available, otherwise fallback to legacy
+        if disease_detector:
+            try:
+                detection_result = disease_detector.predict(str(file_path), top_k=3)
+
+                if detection_result['success']:
+                    prediction = detection_result['prediction']
+                    disease_info = prediction['disease_info']
+
+                    # Format for database storage
+                    analysis_result = {
+                        'disease_detected': prediction['condition'],
+                        'disease_type': prediction['crop'],
+                        'is_healthy': prediction['is_healthy'],
+                        'confidence_score': prediction['confidence'],
+                        'confidence_percentage': prediction['confidence_percentage'],
+                        'severity': disease_info.get('severity', 'unknown'),
+                        'description': disease_info.get('description', ''),
+                        'treatments': disease_info.get('treatments', []),
+                        'prevention': disease_info.get('prevention', []),
+                        'recommendations': disease_info.get('treatments', []),
+                        'treatment_advice': '. '.join(disease_info.get('treatments', [])),
+                        'alternative_predictions': detection_result.get('alternative_predictions', []),
+                        'model_version': 'efficientnet_b3_plantvillage_v1',
+                        'is_confident': detection_result['is_confident']
+                    }
+                else:
+                    raise Exception(detection_result.get('error', 'Prediction failed'))
+
+            except Exception as e:
+                print(f"⚠️ New model failed, falling back to legacy: {e}")
+                analysis_result = ai_service.analyze_crop_health(str(file_path))
+        else:
+            # Use legacy AI service
+            analysis_result = ai_service.analyze_crop_health(str(file_path))
 
         # Get user's first farm if farm_id not provided
         if not farm_id and current_user.farms:
@@ -122,7 +164,19 @@ async def upload_image(
 async def model_status():
     """Return AI model load/status information"""
     try:
-        return ai_service.get_model_status()
+        status_info = {
+            'new_model': {
+                'loaded': disease_detector is not None,
+                'model_name': 'EfficientNet-B3',
+                'version': 'efficientnet_b3_plantvillage_v1',
+                'num_classes': len(disease_detector.model.backbone.classifier) if disease_detector else 0,
+                'device': str(disease_detector.device) if disease_detector else 'N/A',
+                'trained_on': 'PlantVillage Dataset',
+                'total_classes': 38
+            },
+            'legacy_model': ai_service.get_model_status()
+        }
+        return status_info
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving model status: {str(e)}")
 

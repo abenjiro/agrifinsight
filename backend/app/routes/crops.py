@@ -16,6 +16,10 @@ from app.schemas import (
 )
 from app.services.crop_recommendation_service import crop_recommendation_service
 from app.services.ml_crop_recommendation_service import ml_crop_recommendation_service
+from app.services.db_service import (
+    crop_type_service, farm_service, crop_service as crop_db_service,
+    animal_service as animal_db_service, crop_recommendation_service_db
+)
 
 router = APIRouter(prefix="/api", tags=["crops and animals"])
 
@@ -28,12 +32,7 @@ async def get_crop_types(
     db: Session = Depends(get_db)
 ):
     """Get list of crop types from the crop_types master table"""
-    # Query active crop types from master table
-    crop_types = db.query(CropType).filter(
-        CropType.is_active == True
-    ).order_by(CropType.name).all()
-
-    # Return list of crop type names
+    crop_types = crop_type_service.get_active_crop_types(db)
     return {
         "crop_types": [ct.name for ct in crop_types]
     }
@@ -49,7 +48,7 @@ async def add_crop_type(
 ):
     """Add a new crop type to the master list (admin only)"""
     # Check if crop type already exists
-    existing = db.query(CropType).filter(CropType.name == name).first()
+    existing = crop_type_service.find_by_name(db, name)
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -57,15 +56,7 @@ async def add_crop_type(
         )
 
     # Create new crop type
-    new_crop_type = CropType(
-        name=name,
-        category=category,
-        description=description
-    )
-    db.add(new_crop_type)
-    db.commit()
-    db.refresh(new_crop_type)
-
+    new_crop_type = crop_type_service.create_crop_type(db, name, category, description)
     return {"message": "Crop type added successfully", "crop_type": new_crop_type.name}
 
 
@@ -77,18 +68,14 @@ async def get_farm_crops(
 ):
     """Get all crops for a specific farm"""
     # Verify farm ownership
-    farm = db.query(Farm).filter(
-        Farm.id == farm_id,
-        Farm.user_id == current_user.id
-    ).first()
-
+    farm = farm_service.get_user_farm(db, farm_id, current_user.id)
     if not farm:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Farm not found"
         )
 
-    crops = db.query(Crop).filter(Crop.farm_id == farm_id).all()
+    crops = crop_db_service.get_farm_crops(db, farm_id)
     return crops
 
 
@@ -101,11 +88,7 @@ async def create_crop(
 ):
     """Add a new crop to a farm"""
     # Verify farm ownership
-    farm = db.query(Farm).filter(
-        Farm.id == farm_id,
-        Farm.user_id == current_user.id
-    ).first()
-
+    farm = farm_service.get_user_farm(db, farm_id, current_user.id)
     if not farm:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -119,11 +102,7 @@ async def create_crop(
             detail="Farm ID mismatch"
         )
 
-    new_crop = Crop(**crop_data.model_dump())
-    db.add(new_crop)
-    db.commit()
-    db.refresh(new_crop)
-
+    new_crop = crop_db_service.create_crop(db, crop_data.model_dump())
     return new_crop
 
 
@@ -134,8 +113,7 @@ async def get_crop(
     db: Session = Depends(get_db)
 ):
     """Get specific crop details"""
-    crop = db.query(Crop).filter(Crop.id == crop_id).first()
-
+    crop = crop_db_service.get_crop_by_id(db, crop_id)
     if not crop:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -143,11 +121,7 @@ async def get_crop(
         )
 
     # Verify ownership through farm
-    farm = db.query(Farm).filter(
-        Farm.id == crop.farm_id,
-        Farm.user_id == current_user.id
-    ).first()
-
+    farm = farm_service.get_user_farm(db, crop.farm_id, current_user.id)
     if not farm:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

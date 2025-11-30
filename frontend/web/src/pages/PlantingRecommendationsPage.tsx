@@ -66,6 +66,7 @@ export function PlantingRecommendationsPage() {
   const [comparison, setComparison] = useState<CropComparison[]>([])
   const [farmName, setFarmName] = useState<string>('')
   const [view, setView] = useState<'comparison' | 'detailed'>('comparison')
+  const [apiErrors, setApiErrors] = useState<any[]>([])
 
   useEffect(() => {
     if (farmId) {
@@ -88,12 +89,29 @@ export function PlantingRecommendationsPage() {
       )
 
       if (!response.ok) {
-        throw new Error('Failed to fetch recommendations')
+        const errorData = await response.json()
+        throw new Error(errorData.detail || 'Failed to fetch recommendations')
       }
 
       const data = await response.json()
+      console.log('Planting recommendations data:', data)
       setFarmName(data.farm_name)
-      setComparison(data.comparison.comparison)
+
+      // Store any errors from the API
+      if (data.comparison?.errors) {
+        setApiErrors(data.comparison.errors)
+        console.error('API Errors:', data.comparison.errors)
+      }
+
+      // Check if comparison data exists and has the right structure
+      if (data.comparison && data.comparison.comparison) {
+        setComparison(data.comparison.comparison)
+      } else if (data.comparison && Array.isArray(data.comparison)) {
+        setComparison(data.comparison)
+      } else {
+        console.warn('Unexpected data structure:', data)
+        setComparison([])
+      }
     } catch (error: any) {
       console.error('Error fetching recommendations:', error)
       showError(error.message || 'Failed to load recommendations')
@@ -211,7 +229,36 @@ export function PlantingRecommendationsPage() {
         <div className="bg-white rounded-2xl shadow-soft-xl p-6">
           <h2 className="text-lg font-bold text-gray-900 mb-4">Compare Crops for Your Farm</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {comparison.length === 0 && !loading ? (
+            <div className="text-center py-12">
+              <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Recommendations Available</h3>
+              <p className="text-gray-600 mb-2">
+                Unable to generate planting recommendations for this farm.
+              </p>
+              <p className="text-sm text-gray-500 max-w-md mx-auto mb-4">
+                Make sure your farm has GPS coordinates (latitude/longitude) set.
+                Check the browser console for more details about the error.
+              </p>
+
+              {apiErrors.length > 0 && (
+                <div className="mt-6 max-w-2xl mx-auto">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-left">
+                    <h4 className="font-semibold text-red-800 mb-2">Error Details:</h4>
+                    <ul className="space-y-2 text-sm text-red-700">
+                      {apiErrors.map((err, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <span className="font-medium">{err.crop}:</span>
+                          <span className="flex-1">{err.error}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {comparison.map((crop) => (
               <div
                 key={crop.crop}
@@ -253,7 +300,8 @@ export function PlantingRecommendationsPage() {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
