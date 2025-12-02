@@ -173,7 +173,6 @@ export interface AnimalCreate {
 export interface CropRecommendation {
   id: number
   farm_id: number
-  user_id: number
   recommended_crop: string
   confidence_score: number
   suitability_score: number

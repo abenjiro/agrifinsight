@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
-import { cropService } from '../services/api'
+import { cropService, type CropTypeData } from '../services/api'
 import type { CropCreate } from '../types'
 
 interface AddCropModalProps {
@@ -77,26 +77,65 @@ const CROP_DATA: Record<string, {
   recommendedIrrigation: string
   avgYield: { min: number, max: number, unit: string }
 }> = {
+  // Cereals & Grains
   'Maize': { growthDurationDays: 120, waterRequirement: 'medium', recommendedIrrigation: 'rain-fed', avgYield: { min: 2000, max: 5000, unit: 'kg/acre' } },
   'Rice': { growthDurationDays: 150, waterRequirement: 'high', recommendedIrrigation: 'flood', avgYield: { min: 3000, max: 6000, unit: 'kg/acre' } },
-  'Cassava': { growthDurationDays: 300, waterRequirement: 'low', recommendedIrrigation: 'rain-fed', avgYield: { min: 8000, max: 15000, unit: 'kg/acre' } },
-  'Tomato': { growthDurationDays: 90, waterRequirement: 'medium', recommendedIrrigation: 'drip', avgYield: { min: 5000, max: 12000, unit: 'kg/acre' } },
+  'Wheat': { growthDurationDays: 120, waterRequirement: 'medium', recommendedIrrigation: 'rain-fed', avgYield: { min: 1500, max: 3500, unit: 'kg/acre' } },
+  'Barley': { growthDurationDays: 90, waterRequirement: 'low', recommendedIrrigation: 'rain-fed', avgYield: { min: 1200, max: 2800, unit: 'kg/acre' } },
+  'Sorghum': { growthDurationDays: 100, waterRequirement: 'low', recommendedIrrigation: 'rain-fed', avgYield: { min: 1000, max: 2500, unit: 'kg/acre' } },
+  'Millet': { growthDurationDays: 85, waterRequirement: 'low', recommendedIrrigation: 'rain-fed', avgYield: { min: 800, max: 2000, unit: 'kg/acre' } },
+
+  // Legumes
   'Soybean': { growthDurationDays: 100, waterRequirement: 'medium', recommendedIrrigation: 'rain-fed', avgYield: { min: 800, max: 1500, unit: 'kg/acre' } },
   'Groundnut': { growthDurationDays: 120, waterRequirement: 'medium', recommendedIrrigation: 'rain-fed', avgYield: { min: 1000, max: 2500, unit: 'kg/acre' } },
+  'Beans': { growthDurationDays: 75, waterRequirement: 'medium', recommendedIrrigation: 'drip', avgYield: { min: 600, max: 1200, unit: 'kg/acre' } },
+  'Peas': { growthDurationDays: 60, waterRequirement: 'medium', recommendedIrrigation: 'drip', avgYield: { min: 800, max: 1500, unit: 'kg/acre' } },
+
+  // Root & Tuber Crops
+  'Cassava': { growthDurationDays: 300, waterRequirement: 'low', recommendedIrrigation: 'rain-fed', avgYield: { min: 8000, max: 15000, unit: 'kg/acre' } },
   'Yam': { growthDurationDays: 240, waterRequirement: 'medium', recommendedIrrigation: 'rain-fed', avgYield: { min: 6000, max: 12000, unit: 'kg/acre' } },
-  'Plantain': { growthDurationDays: 365, waterRequirement: 'high', recommendedIrrigation: 'manual', avgYield: { min: 8000, max: 15000, unit: 'kg/acre' } },
-  'Cocoa': { growthDurationDays: 1095, waterRequirement: 'high', recommendedIrrigation: 'rain-fed', avgYield: { min: 400, max: 1000, unit: 'kg/acre' } },
+  'Sweet Potato': { growthDurationDays: 120, waterRequirement: 'medium', recommendedIrrigation: 'rain-fed', avgYield: { min: 5000, max: 10000, unit: 'kg/acre' } },
+  'Potato': { growthDurationDays: 90, waterRequirement: 'medium', recommendedIrrigation: 'drip', avgYield: { min: 8000, max: 15000, unit: 'kg/acre' } },
+  'Ginger': { growthDurationDays: 240, waterRequirement: 'medium', recommendedIrrigation: 'drip', avgYield: { min: 3000, max: 6000, unit: 'kg/acre' } },
+  'Garlic': { growthDurationDays: 150, waterRequirement: 'medium', recommendedIrrigation: 'drip', avgYield: { min: 2000, max: 4000, unit: 'kg/acre' } },
+
+  // Vegetables
+  'Tomato': { growthDurationDays: 90, waterRequirement: 'medium', recommendedIrrigation: 'drip', avgYield: { min: 5000, max: 12000, unit: 'kg/acre' } },
   'Pepper': { growthDurationDays: 90, waterRequirement: 'medium', recommendedIrrigation: 'drip', avgYield: { min: 2000, max: 5000, unit: 'kg/acre' } },
   'Onion': { growthDurationDays: 110, waterRequirement: 'medium', recommendedIrrigation: 'drip', avgYield: { min: 8000, max: 15000, unit: 'kg/acre' } },
   'Cabbage': { growthDurationDays: 75, waterRequirement: 'medium', recommendedIrrigation: 'drip', avgYield: { min: 10000, max: 20000, unit: 'kg/acre' } },
+  'Carrot': { growthDurationDays: 70, waterRequirement: 'medium', recommendedIrrigation: 'drip', avgYield: { min: 6000, max: 12000, unit: 'kg/acre' } },
+  'Okra': { growthDurationDays: 60, waterRequirement: 'medium', recommendedIrrigation: 'drip', avgYield: { min: 3000, max: 6000, unit: 'kg/acre' } },
+  'Garden Egg': { growthDurationDays: 85, waterRequirement: 'medium', recommendedIrrigation: 'drip', avgYield: { min: 4000, max: 8000, unit: 'kg/acre' } },
+  'Cucumber': { growthDurationDays: 55, waterRequirement: 'high', recommendedIrrigation: 'drip', avgYield: { min: 5000, max: 10000, unit: 'kg/acre' } },
+  'Watermelon': { growthDurationDays: 80, waterRequirement: 'medium', recommendedIrrigation: 'drip', avgYield: { min: 15000, max: 30000, unit: 'kg/acre' } },
+
+  // Fruits
+  'Plantain': { growthDurationDays: 365, waterRequirement: 'high', recommendedIrrigation: 'manual', avgYield: { min: 8000, max: 15000, unit: 'kg/acre' } },
+  'Banana': { growthDurationDays: 300, waterRequirement: 'high', recommendedIrrigation: 'drip', avgYield: { min: 10000, max: 20000, unit: 'kg/acre' } },
+  'Pineapple': { growthDurationDays: 480, waterRequirement: 'low', recommendedIrrigation: 'rain-fed', avgYield: { min: 12000, max: 25000, unit: 'kg/acre' } },
+  'Mango': { growthDurationDays: 1460, waterRequirement: 'medium', recommendedIrrigation: 'drip', avgYield: { min: 3000, max: 8000, unit: 'kg/acre' } },
+  'Orange': { growthDurationDays: 1095, waterRequirement: 'medium', recommendedIrrigation: 'drip', avgYield: { min: 5000, max: 12000, unit: 'kg/acre' } },
+
+  // Cash Crops
+  'Cocoa': { growthDurationDays: 1095, waterRequirement: 'high', recommendedIrrigation: 'rain-fed', avgYield: { min: 400, max: 1000, unit: 'kg/acre' } },
+  'Coffee': { growthDurationDays: 1095, waterRequirement: 'medium', recommendedIrrigation: 'drip', avgYield: { min: 600, max: 1500, unit: 'kg/acre' } },
+  'Cotton': { growthDurationDays: 150, waterRequirement: 'medium', recommendedIrrigation: 'rain-fed', avgYield: { min: 800, max: 1800, unit: 'kg/acre' } },
+  'Sugarcane': { growthDurationDays: 365, waterRequirement: 'high', recommendedIrrigation: 'flood', avgYield: { min: 30000, max: 60000, unit: 'kg/acre' } },
+  'Tea': { growthDurationDays: 1095, waterRequirement: 'high', recommendedIrrigation: 'rain-fed', avgYield: { min: 1000, max: 2500, unit: 'kg/acre' } },
+  'Tobacco': { growthDurationDays: 90, waterRequirement: 'medium', recommendedIrrigation: 'drip', avgYield: { min: 1200, max: 2500, unit: 'kg/acre' } },
+  'Coconut': { growthDurationDays: 2555, waterRequirement: 'medium', recommendedIrrigation: 'rain-fed', avgYield: { min: 5000, max: 12000, unit: 'kg/acre' } },
+  'Palm Oil': { growthDurationDays: 1095, waterRequirement: 'high', recommendedIrrigation: 'rain-fed', avgYield: { min: 3000, max: 8000, unit: 'kg/acre' } },
+  'Rubber': { growthDurationDays: 2190, waterRequirement: 'high', recommendedIrrigation: 'rain-fed', avgYield: { min: 1000, max: 2500, unit: 'kg/acre' } },
+  'Cashew': { growthDurationDays: 1095, waterRequirement: 'low', recommendedIrrigation: 'rain-fed', avgYield: { min: 400, max: 1000, unit: 'kg/acre' } },
 }
 
 export default function AddCropModal({ isOpen, onClose, farmId, onSuccess }: AddCropModalProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
-  const [cropTypes, setCropTypes] = useState<string[]>([])
-  const [filteredCrops, setFilteredCrops] = useState<string[]>([])
+  const [cropTypes, setCropTypes] = useState<CropTypeData[]>([])
+  const [filteredCrops, setFilteredCrops] = useState<CropTypeData[]>([])
   const [formData, setFormData] = useState<CropCreate>({
     farm_id: farmId,
     crop_type: '',
@@ -126,8 +165,20 @@ export default function AddCropModal({ isOpen, onClose, farmId, onSuccess }: Add
       setCropTypes(types)
     } catch (err) {
       console.error('Failed to load crop types:', err)
-      // Fallback to common crops if API fails
-      setCropTypes(COMMON_CROP_TYPES)
+      // Fallback to common crops if API fails (convert to CropTypeData format)
+      setCropTypes(COMMON_CROP_TYPES.map(name => ({
+        name,
+        category: '',
+        scientific_name: null,
+        description: null,
+        growth_duration_days: null,
+        water_requirement: null,
+        recommended_irrigation: null,
+        min_yield_per_acre: null,
+        max_yield_per_acre: null,
+        avg_yield_per_acre: null,
+        yield_unit: null
+      })))
     }
   }
 
@@ -149,7 +200,7 @@ export default function AddCropModal({ isOpen, onClose, farmId, onSuccess }: Add
     // Filter crops based on input
     if (value.trim()) {
       const filtered = cropTypes.filter(crop =>
-        crop.toLowerCase().includes(value.toLowerCase())
+        crop.name.toLowerCase().includes(value.toLowerCase())
       )
       setFilteredCrops(filtered)
       setShowSuggestions(true)
@@ -159,34 +210,42 @@ export default function AddCropModal({ isOpen, onClose, farmId, onSuccess }: Add
     }
   }
 
-  const calculateHarvestDate = (plantingDate: string, cropType: string): string => {
-    if (!plantingDate || !cropType) return ''
-
-    const cropData = CROP_DATA[cropType]
-    if (!cropData) return ''
+  const calculateHarvestDate = (plantingDate: string, cropTypeData: CropTypeData | null): string => {
+    if (!plantingDate || !cropTypeData || !cropTypeData.growth_duration_days) return ''
 
     const planting = new Date(plantingDate)
     const harvest = new Date(planting)
-    harvest.setDate(harvest.getDate() + cropData.growthDurationDays)
+    harvest.setDate(harvest.getDate() + cropTypeData.growth_duration_days)
 
     return harvest.toISOString().split('T')[0]
   }
 
-  const autoPredictCropData = (cropType: string, plantingDate?: string) => {
-    const cropData = CROP_DATA[cropType]
+  const findCropTypeData = (cropName: string): CropTypeData | null => {
+    return cropTypes.find(ct => ct.name === cropName) || null
+  }
+
+  const autoPredictCropData = (cropTypeName: string, plantingDate?: string) => {
+    const cropData = findCropTypeData(cropTypeName)
     if (!cropData) return
 
-    const updates: Partial<CropCreate> = {
-      irrigation_method: cropData.recommendedIrrigation,
-      yield_unit: cropData.avgYield.unit.split('/')[0], // Extract 'kg' from 'kg/acre'
-      expected_yield: Math.round((cropData.avgYield.min + cropData.avgYield.max) / 2)
+    const updates: Partial<CropCreate> = {}
+
+    // Set irrigation method if available
+    if (cropData.recommended_irrigation) {
+      updates.irrigation_method = cropData.recommended_irrigation
+    }
+
+    // Set yield prediction if available
+    if (cropData.min_yield_per_acre && cropData.max_yield_per_acre) {
+      updates.expected_yield = Math.round((cropData.min_yield_per_acre + cropData.max_yield_per_acre) / 2)
+      updates.yield_unit = cropData.yield_unit || 'kg'
     }
 
     // Calculate harvest date if planting date exists
     if (plantingDate || formData.planting_date) {
       const harvestDate = calculateHarvestDate(
         plantingDate || formData.planting_date || '',
-        cropType
+        cropData
       )
       if (harvestDate) {
         updates.expected_harvest_date = harvestDate
@@ -219,7 +278,8 @@ export default function AddCropModal({ isOpen, onClose, farmId, onSuccess }: Add
 
     // Auto-calculate harvest date
     if (plantingDate && formData.crop_type) {
-      const harvestDate = calculateHarvestDate(plantingDate, formData.crop_type)
+      const cropData = findCropTypeData(formData.crop_type)
+      const harvestDate = calculateHarvestDate(plantingDate, cropData)
       if (harvestDate) {
         setFormData(prev => ({
           ...prev,
@@ -322,7 +382,7 @@ export default function AddCropModal({ isOpen, onClose, farmId, onSuccess }: Add
                     onFocus={() => {
                       if (formData.crop_type.trim()) {
                         const filtered = cropTypes.filter(crop =>
-                          crop.toLowerCase().includes(formData.crop_type.toLowerCase())
+                          crop.name.toLowerCase().includes(formData.crop_type.toLowerCase())
                         )
                         setFilteredCrops(filtered)
                         setShowSuggestions(true)
@@ -338,11 +398,14 @@ export default function AddCropModal({ isOpen, onClose, farmId, onSuccess }: Add
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
                       {filteredCrops.map((crop) => (
                         <div
-                          key={crop}
-                          onClick={() => handleCropSelect(crop)}
-                          className="px-3 py-2 hover:bg-green-50 cursor-pointer text-sm"
+                          key={crop.name}
+                          onClick={() => handleCropSelect(crop.name)}
+                          className="px-3 py-2 hover:bg-green-50 cursor-pointer"
                         >
-                          {crop}
+                          <div className="text-sm font-medium">{crop.name}</div>
+                          {crop.scientific_name && (
+                            <div className="text-xs text-gray-500 italic">{crop.scientific_name}</div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -411,7 +474,7 @@ export default function AddCropModal({ isOpen, onClose, farmId, onSuccess }: Add
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Expected Harvest Date
-                    {formData.expected_harvest_date && formData.crop_type && CROP_DATA[formData.crop_type] && (
+                    {formData.expected_harvest_date && formData.crop_type && findCropTypeData(formData.crop_type)?.growth_duration_days && (
                       <span className="ml-2 text-xs text-green-600">✓ Auto-calculated</span>
                     )}
                   </label>
@@ -421,11 +484,11 @@ export default function AddCropModal({ isOpen, onClose, farmId, onSuccess }: Add
                     value={formData.expected_harvest_date}
                     onChange={handleChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 bg-green-50"
-                    readOnly={!!formData.crop_type && !!CROP_DATA[formData.crop_type]}
+                    readOnly={!!formData.crop_type && !!findCropTypeData(formData.crop_type)?.growth_duration_days}
                   />
-                  {formData.crop_type && CROP_DATA[formData.crop_type] && (
+                  {formData.crop_type && findCropTypeData(formData.crop_type)?.growth_duration_days && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Based on {CROP_DATA[formData.crop_type].growthDurationDays} days growth period
+                      Based on {findCropTypeData(formData.crop_type)?.growth_duration_days} days growth period
                     </p>
                   )}
                 </div>
@@ -453,7 +516,7 @@ export default function AddCropModal({ isOpen, onClose, farmId, onSuccess }: Add
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Expected Yield
-                    {formData.expected_yield && formData.crop_type && CROP_DATA[formData.crop_type] && (
+                    {formData.expected_yield && formData.crop_type && findCropTypeData(formData.crop_type)?.avg_yield_per_acre && (
                       <span className="ml-2 text-xs text-green-600">✓ Auto-predicted</span>
                     )}
                   </label>
@@ -484,7 +547,7 @@ export default function AddCropModal({ isOpen, onClose, farmId, onSuccess }: Add
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Irrigation Method
-                    {formData.irrigation_method && formData.crop_type && CROP_DATA[formData.crop_type] && (
+                    {formData.irrigation_method && formData.crop_type && findCropTypeData(formData.crop_type)?.recommended_irrigation && (
                       <span className="ml-2 text-xs text-green-600">✓ Recommended</span>
                     )}
                   </label>

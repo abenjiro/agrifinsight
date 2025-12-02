@@ -141,7 +141,7 @@ async def get_harvest_recommendations(
         return {
             "success": True,
             "crop_id": crop_id,
-            "crop_name": crop.crop_name,
+            "crop_name": crop.crop_type,  # crop_type is the name of the crop
             "crop_type": crop.crop_type,
             "farm_name": farm.name,
             "prediction": prediction
@@ -296,7 +296,7 @@ async def get_crop_care_recommendations(
         return {
             "success": True,
             "crop_id": crop_id,
-            "crop_name": crop.crop_name,
+            "crop_name": crop.crop_type,  # crop_type is the name of the crop
             "crop_type": crop.crop_type,
             "crop_age_days": crop_age_days,
             "growth_stage": crop.growth_stage,

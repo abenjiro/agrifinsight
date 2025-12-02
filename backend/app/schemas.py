@@ -385,7 +385,6 @@ class CropRecommendationBase(BaseModel):
 class CropRecommendation(CropRecommendationBase):
     id: int
     farm_id: int
-    user_id: int
     model_version: Optional[str] = None
     recommendation_date: datetime
     is_active: bool

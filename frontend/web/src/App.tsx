@@ -12,6 +12,8 @@ import { AIFeaturesPage } from './pages/AIFeaturesPage'
 import { AnalysisPage } from './pages/AnalysisPage'
 import { RecommendationsPage } from './pages/RecommendationsPage'
 import { PlantingRecommendationsPage } from './pages/PlantingRecommendationsPage'
+import { HarvestPredictionsPage } from './pages/HarvestPredictionsPage'
+import { ReportsPage } from './pages/ReportsPage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 
@@ -77,6 +79,13 @@ function App() {
           </DashboardLayout>
         </ProtectedRoute>
       } />
+      <Route path="/crops/:cropId/harvest" element={
+        <ProtectedRoute>
+          <DashboardLayout>
+            <HarvestPredictionsPage />
+          </DashboardLayout>
+        </ProtectedRoute>
+      } />
       <Route path="/analysis" element={
         <ProtectedRoute>
           <DashboardLayout>
@@ -88,6 +97,13 @@ function App() {
         <ProtectedRoute>
           <DashboardLayout>
             <RecommendationsPage />
+          </DashboardLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/reports" element={
+        <ProtectedRoute>
+          <DashboardLayout>
+            <ReportsPage />
           </DashboardLayout>
         </ProtectedRoute>
       } />

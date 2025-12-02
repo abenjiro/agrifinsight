@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Upload, Camera, FileImage, AlertCircle, CheckCircle, Loader, Calendar, Trash2 } from 'lucide-react'
+import { Upload, Camera, FileImage, AlertCircle, CheckCircle, Loader, Calendar, Trash2, ChevronDown, ChevronUp, Pill } from 'lucide-react'
 import { showError, showSuccess, showConfirm } from '../utils/sweetalert'
 import api from '../services/api'
 
@@ -7,10 +7,14 @@ interface AnalysisHistory {
   id: number
   image_path: string
   disease_detected: string
+  disease_type?: string
   confidence_score: number
   severity: string
   created_at: string
   farm_id?: number
+  filename?: string
+  treatment_advice?: string
+  recommendations?: string
 }
 
 export function AnalysisPage() {
@@ -23,6 +27,7 @@ export function AnalysisPage() {
   const [loadingHistory, setLoadingHistory] = useState(true)
   const [saving, setSaving] = useState(false)
   const [currentAnalysisId, setCurrentAnalysisId] = useState<number | null>(null)
+  const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     fetchAnalysisHistory()
@@ -86,6 +91,18 @@ export function AnalysisPage() {
     if (e.target.files && e.target.files[0]) {
       handleFile(e.target.files[0])
     }
+  }
+
+  const toggleCardExpansion = (id: number) => {
+    setExpandedCards(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(id)) {
+        newSet.delete(id)
+      } else {
+        newSet.add(id)
+      }
+      return newSet
+    })
   }
 
   const analyzeImage = async () => {
@@ -424,65 +441,180 @@ export function AnalysisPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {(Array.isArray(analysisHistory) ? analysisHistory : []).map((analysis) => (
-                  <div
-                    key={analysis.id}
-                    className="relative border border-gray-200 rounded-xl p-4 hover:shadow-md transition"
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        analysis.disease_detected.toLowerCase().includes('healthy')
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {analysis.disease_detected.toLowerCase().includes('healthy') ? (
-                          <CheckCircle className="w-3 h-3 inline mr-1" />
-                        ) : (
-                          <AlertCircle className="w-3 h-3 inline mr-1" />
-                        )}
-                        {analysis.disease_detected}
-                      </div>
-                      <button
-                        onClick={() => deleteAnalysis(analysis.id)}
-                        className="p-1 text-gray-400 hover:text-red-600 transition"
-                        title="Delete analysis"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                {(Array.isArray(analysisHistory) ? analysisHistory : []).map((analysis) => {
+                  // Parse disease_type to extract crop and disease name
+                  const diseaseType = analysis.disease_type || analysis.disease_detected
+                  const parts = diseaseType.split('___')
+                  const cropName = parts[0]?.replace(/_/g, ' ') || 'Unknown'
+                  const diseaseName = parts[1]?.replace(/_/g, ' ') || analysis.disease_detected.replace(/_/g, ' ')
+                  const isExpanded = expandedCards.has(analysis.id)
 
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">Confidence:</span>
-                        <span className="text-sm font-bold text-gray-900">
-                          {Math.round(analysis.confidence_score * 100)}%
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">Severity:</span>
-                        <span className={`text-sm font-bold ${
-                          analysis.severity.toLowerCase() === 'high' ? 'text-red-600' :
-                          analysis.severity.toLowerCase() === 'medium' ? 'text-orange-600' :
-                          'text-green-600'
+                  // Parse recommendations if it's a JSON string
+                  let recommendations: string[] = []
+                  if (analysis.recommendations) {
+                    try {
+                      recommendations = typeof analysis.recommendations === 'string'
+                        ? JSON.parse(analysis.recommendations)
+                        : analysis.recommendations
+                    } catch {
+                      recommendations = [analysis.recommendations]
+                    }
+                  }
+
+                  const hasTreatment = analysis.treatment_advice || recommendations.length > 0
+
+                  return (
+                    <div
+                      key={analysis.id}
+                      className="relative border border-gray-200 rounded-xl p-4 hover:shadow-md transition bg-white"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          analysis.disease_detected.toLowerCase().includes('healthy')
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
                         }`}>
-                          {analysis.severity}
-                        </span>
+                          {analysis.disease_detected.toLowerCase().includes('healthy') ? (
+                            <CheckCircle className="w-3 h-3 inline mr-1" />
+                          ) : (
+                            <AlertCircle className="w-3 h-3 inline mr-1" />
+                          )}
+                          {diseaseName}
+                        </div>
+                        <button
+                          onClick={() => deleteAnalysis(analysis.id)}
+                          className="p-1 text-gray-400 hover:text-red-600 transition"
+                          title="Delete analysis"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
-                      <div className="pt-2 border-t border-gray-100">
-                        <div className="flex items-center text-xs text-gray-500">
-                          <Calendar className="w-3 h-3 mr-1" />
-                          {new Date(analysis.created_at).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
+
+                      {/* Crop/Plant Name */}
+                      {cropName !== diseaseName && (
+                        <div className="mb-3 pb-3 border-b border-gray-100">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-gradient-to-tl from-green-600 to-lime-400 rounded-lg flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">
+                                {cropName.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Crop/Plant</p>
+                              <p className="text-sm font-semibold text-gray-900">{cropName}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-600">Confidence:</span>
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full ${
+                                  analysis.confidence_score >= 0.8 ? 'bg-green-500' :
+                                  analysis.confidence_score >= 0.6 ? 'bg-yellow-500' :
+                                  'bg-red-500'
+                                }`}
+                                style={{ width: `${analysis.confidence_score * 100}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-bold text-gray-900">
+                              {Math.round(analysis.confidence_score * 100)}%
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-600">Severity:</span>
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                            analysis.severity.toLowerCase() === 'high' ? 'bg-red-100 text-red-700' :
+                            analysis.severity.toLowerCase() === 'medium' ? 'bg-orange-100 text-orange-700' :
+                            'bg-green-100 text-green-700'
+                          }`}>
+                            {analysis.severity}
+                          </span>
+                        </div>
+                        {analysis.filename && (
+                          <div className="flex items-start gap-1">
+                            <span className="text-xs text-gray-600">File:</span>
+                            <span className="text-xs text-gray-900 truncate flex-1" title={analysis.filename}>
+                              {analysis.filename}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Treatment/Recommendations Section */}
+                        {hasTreatment && (
+                          <div className="pt-2 border-t border-gray-100">
+                            <button
+                              onClick={() => toggleCardExpansion(analysis.id)}
+                              className="w-full flex items-center justify-between text-xs font-semibold text-blue-600 hover:text-blue-700 transition"
+                            >
+                              <span className="flex items-center gap-1">
+                                <Pill className="w-3 h-3" />
+                                Recommended Treatment
+                              </span>
+                              {isExpanded ? (
+                                <ChevronUp className="w-3 h-3" />
+                              ) : (
+                                <ChevronDown className="w-3 h-3" />
+                              )}
+                            </button>
+
+                            {isExpanded && (
+                              <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                {analysis.treatment_advice && (
+                                  <div className="mb-2">
+                                    <p className="text-xs font-semibold text-gray-700 mb-1">Treatment Advice:</p>
+                                    <p className="text-xs text-gray-600 leading-relaxed">
+                                      {analysis.treatment_advice}
+                                    </p>
+                                  </div>
+                                )}
+
+                                {recommendations.length > 0 && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-gray-700 mb-1">Recommendations:</p>
+                                    <ul className="space-y-1">
+                                      {recommendations.slice(0, 3).map((rec: string, idx: number) => (
+                                        <li key={idx} className="flex items-start gap-1.5">
+                                          <span className="text-blue-600 mt-0.5">•</span>
+                                          <span className="text-xs text-gray-600 leading-relaxed flex-1">
+                                            {typeof rec === 'string' ? rec : JSON.stringify(rec)}
+                                          </span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                    {recommendations.length > 3 && (
+                                      <p className="text-xs text-gray-500 mt-1 italic">
+                                        +{recommendations.length - 3} more recommendations
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="pt-2 border-t border-gray-100">
+                          <div className="flex items-center text-xs text-gray-500">
+                            <Calendar className="w-3 h-3 mr-1" />
+                            {new Date(analysis.created_at).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>

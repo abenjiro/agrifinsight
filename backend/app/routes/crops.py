@@ -31,10 +31,25 @@ async def get_crop_types(
     current_user: User = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
-    """Get list of crop types from the crop_types master table"""
+    """Get list of crop types with prediction data from the crop_types master table"""
     crop_types = crop_type_service.get_active_crop_types(db)
     return {
-        "crop_types": [ct.name for ct in crop_types]
+        "crop_types": [
+            {
+                "name": ct.name,
+                "category": ct.category,
+                "scientific_name": ct.scientific_name,
+                "description": ct.description,
+                "growth_duration_days": ct.growth_duration_days,
+                "water_requirement": ct.water_requirement,
+                "recommended_irrigation": ct.recommended_irrigation,
+                "min_yield_per_acre": ct.min_yield_per_acre,
+                "max_yield_per_acre": ct.max_yield_per_acre,
+                "avg_yield_per_acre": ct.avg_yield_per_acre,
+                "yield_unit": ct.yield_unit
+            }
+            for ct in crop_types
+        ]
     }
 
 
@@ -418,8 +433,7 @@ async def generate_crop_recommendations(
 
     # Delete old recommendations for this farm to avoid duplicates
     db.query(CropRecommendation).filter(
-        CropRecommendation.farm_id == farm_id,
-        CropRecommendation.user_id == current_user.id
+        CropRecommendation.farm_id == farm_id
     ).delete()
 
     # Save new recommendations to database
@@ -441,7 +455,6 @@ async def generate_crop_recommendations(
 
         crop_rec = CropRecommendation(
             farm_id=farm_id,
-            user_id=current_user.id,
             **filtered_rec
         )
         db.add(crop_rec)

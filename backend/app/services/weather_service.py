@@ -18,15 +18,20 @@ class WeatherService:
     def __init__(self):
         self.api_key = settings.openweather_api_key
         self.api_url = settings.openweather_api_url
-        self.use_mock = not self.api_key  # Use mock data if no API key
+
+        # Validate API key is configured
+        if not self.api_key:
+            raise ValueError(
+                "OpenWeather API key is required. "
+                "Please set OPENWEATHER_API_KEY in your .env file. "
+                "Get a free key at: https://openweathermap.org/api"
+            )
 
     async def get_current_weather(self, latitude: float, longitude: float) -> Dict:
         """
         Get current weather conditions for a location
+        Always fetches live data from OpenWeather API
         """
-        if self.use_mock:
-            return self._get_mock_current_weather(latitude, longitude)
-
         try:
             url = f"{self.api_url}/weather"
             params = {
@@ -56,18 +61,22 @@ class WeatherService:
                 'timestamp': datetime.now().isoformat()
             }
 
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error fetching current weather from OpenWeather API: {e}")
+            raise Exception(
+                f"Failed to fetch weather data from OpenWeather API. "
+                f"Error: {str(e)}. Please check your API key and internet connection."
+            )
         except Exception as e:
-            logger.error(f"Error fetching current weather: {e}")
-            return self._get_mock_current_weather(latitude, longitude)
+            logger.error(f"Unexpected error in get_current_weather: {e}")
+            raise
 
     async def get_forecast(self, latitude: float, longitude: float, days: int = 7) -> Dict:
         """
         Get weather forecast for the next N days
         Uses free tier 5-day forecast API (forecast/daily is deprecated)
+        Always fetches live data from OpenWeather API
         """
-        if self.use_mock:
-            return self._get_mock_forecast(latitude, longitude, days)
-
         try:
             # Use free tier forecast API (5 day / 3 hour forecast)
             url = f"{self.api_url}/forecast"
@@ -161,10 +170,16 @@ class WeatherService:
                 'generated_at': datetime.now().isoformat()
             }
 
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error fetching forecast from OpenWeather API: {e}")
+            raise Exception(
+                f"Failed to fetch weather forecast from OpenWeather API. "
+                f"Error: {str(e)}. Please check your API key and internet connection."
+            )
         except Exception as e:
-            logger.error(f"Error fetching forecast: {e}")
+            logger.error(f"Unexpected error in get_forecast: {e}")
             logger.error(f"Error details: {str(e)}")
-            return self._get_mock_forecast(latitude, longitude, days)
+            raise
 
     async def get_planting_weather_advice(
         self,
@@ -354,63 +369,6 @@ class WeatherService:
             'total_rainfall': round(sum(d.get('rain', 0) for d in forecast_days), 1),
             'rainy_days': sum(1 for d in forecast_days if d.get('pop', 0) > 50),
             'avg_humidity': round(sum(d['humidity'] for d in forecast_days) / len(forecast_days), 0)
-        }
-
-    def _get_mock_current_weather(self, latitude: float, longitude: float) -> Dict:
-        """
-        Generate mock current weather data for testing
-        """
-        return {
-            'temperature': 24.5,
-            'feels_like': 26.0,
-            'humidity': 65,
-            'pressure': 1013,
-            'wind_speed': 3.5,
-            'wind_direction': 180,
-            'clouds': 40,
-            'visibility': 10000,
-            'description': 'partly cloudy',
-            'icon': '02d',
-            'sunrise': (datetime.now().replace(hour=6, minute=0)).isoformat(),
-            'sunset': (datetime.now().replace(hour=18, minute=30)).isoformat(),
-            'timestamp': datetime.now().isoformat(),
-            'is_mock_data': True
-        }
-
-    def _get_mock_forecast(self, latitude: float, longitude: float, days: int) -> Dict:
-        """
-        Generate mock forecast data for testing
-        """
-        forecast = []
-        base_date = datetime.now()
-
-        for i in range(days):
-            date = base_date + timedelta(days=i)
-            forecast.append({
-                'date': date.isoformat(),
-                'temp_min': 18 + (i % 3),
-                'temp_max': 28 + (i % 4),
-                'temp_day': 24 + (i % 3),
-                'temp_night': 19 + (i % 2),
-                'humidity': 60 + (i % 20),
-                'pressure': 1013 + (i % 5),
-                'wind_speed': 3.0 + (i % 3),
-                'clouds': 40 + (i % 30),
-                'pop': 30 if i % 3 == 0 else 10,  # Rain every 3rd day
-                'rain': 5 if i % 3 == 0 else 0,
-                'description': 'partly cloudy',
-                'icon': '02d'
-            })
-
-        return {
-            'location': {
-                'latitude': latitude,
-                'longitude': longitude,
-                'timezone': 'Africa/Accra'
-            },
-            'forecast': forecast,
-            'generated_at': datetime.now().isoformat(),
-            'is_mock_data': True
         }
 
 

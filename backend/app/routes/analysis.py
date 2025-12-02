@@ -114,7 +114,6 @@ async def upload_image(
         crop_image = CropImage(
             farm_id=farm_id,
             field_id=field_id,
-            user_id=current_user.id,
             image_url=str(file_path),
             filename=filename,
             file_size=file.size,
@@ -127,7 +126,6 @@ async def upload_image(
         # Save analysis result to database
         analysis_record = AnalysisResult(
             image_id=crop_image.id,
-            user_id=current_user.id,
             disease_detected=analysis_result.get("disease_detected") or analysis_result.get("disease_type", "Unknown"),
             confidence_score=analysis_result.get("confidence_score", 0.0),
             disease_type=analysis_result.get("disease_type"),
@@ -221,12 +219,13 @@ async def get_analysis_history(
 ):
     """Get analysis history for user or farm"""
 
-    # Query analysis results for the current user
-    query = db.query(AnalysisResult).filter(AnalysisResult.user_id == current_user.id)
+    # Query analysis results for the current user by joining through CropImage and Farm
+    from app.models.database import Farm
+    query = db.query(AnalysisResult).join(CropImage).join(Farm).filter(Farm.user_id == current_user.id)
 
     # Filter by farm_id if provided
     if farm_id:
-        query = query.join(CropImage).filter(CropImage.farm_id == farm_id)
+        query = query.filter(CropImage.farm_id == farm_id)
 
     # Order by created_at descending (most recent first)
     query = query.order_by(AnalysisResult.created_at.desc())
@@ -270,10 +269,11 @@ async def save_analysis(
 ):
     """Save analysis to permanent storage"""
 
-    # Verify the analysis exists and belongs to the current user
-    analysis = db.query(AnalysisResult).filter(
+    # Verify the analysis exists and belongs to the current user by joining through CropImage and Farm
+    from app.models.database import Farm
+    analysis = db.query(AnalysisResult).join(CropImage).join(Farm).filter(
         AnalysisResult.id == analysis_id,
-        AnalysisResult.user_id == current_user.id
+        Farm.user_id == current_user.id
     ).first()
 
     if not analysis:
@@ -294,19 +294,19 @@ async def delete_analysis(
 ):
     """Delete analysis and associated image"""
 
-    # Get the crop image
-    crop_image = db.query(CropImage).filter(
+    # Get the crop image by joining through Farm to verify ownership
+    from app.models.database import Farm
+    crop_image = db.query(CropImage).join(Farm).filter(
         CropImage.id == image_id,
-        CropImage.user_id == current_user.id
+        Farm.user_id == current_user.id
     ).first()
 
     if not crop_image:
         raise HTTPException(status_code=404, detail="Image not found")
 
-    # Get all associated analysis results
+    # Get all associated analysis results (no need to re-verify user ownership)
     analysis_results = db.query(AnalysisResult).filter(
-        AnalysisResult.image_id == image_id,
-        AnalysisResult.user_id == current_user.id
+        AnalysisResult.image_id == image_id
     ).all()
 
     # Delete analysis results from database

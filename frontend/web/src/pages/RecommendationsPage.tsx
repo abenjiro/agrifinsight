@@ -58,6 +58,7 @@ export function RecommendationsPage() {
   const [loading, setLoading] = useState(true)
   const [weatherLoading, setWeatherLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
   useEffect(() => {
     fetchFarms()
@@ -457,43 +458,85 @@ export function RecommendationsPage() {
               </div>
             </div>
 
-            {/* Recommendation Stats Card */}
+            {/* Crop Suitability Stats Card */}
             <div className="relative flex flex-col min-w-0 break-words bg-white border-0 shadow-soft-xl rounded-2xl bg-clip-border mb-6">
               <div className="p-4 pb-0 mb-0 bg-white border-b-0 rounded-t-2xl">
                 <h6 className="mb-0 font-bold">Crop Suitability</h6>
-                <p className="leading-normal text-sm text-gray-600">Top recommendations</p>
+                <p className="leading-normal text-sm text-gray-600">Based on suitability scores</p>
               </div>
               <div className="flex-auto p-4">
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                  {/* Highly Suitable (80-100%) */}
+                  <button
+                    onClick={() => setSelectedCategory(selectedCategory === 'high' ? null : 'high')}
+                    className="w-full flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 transition cursor-pointer"
+                  >
                     <div className="flex items-center space-x-3">
                       <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-                      <span className="text-sm font-medium text-gray-700">Highly Suitable</span>
+                      <span className="text-sm font-medium text-gray-700">Highly Suitable (≥80%)</span>
                     </div>
                     <span className="text-lg font-bold text-green-600">
-                      {cropRecommendations.filter((r) => r.recommendation === 'highly_recommended').length}
+                      {cropRecommendations.filter((r) => r.suitability_score >= 80).length}
                     </span>
-                  </div>
+                  </button>
+                  {selectedCategory === 'high' && cropRecommendations.filter((r) => r.suitability_score >= 80).length > 0 && (
+                    <div className="ml-5 pl-4 border-l-2 border-green-300 space-y-2">
+                      {cropRecommendations.filter((r) => r.suitability_score >= 80).map((crop) => (
+                        <div key={crop.crop} className="flex items-center justify-between py-2 px-3 bg-white rounded border border-green-100 hover:border-green-300 transition">
+                          <span className="text-sm font-medium text-gray-800">{crop.crop}</span>
+                          <span className="text-sm font-bold text-green-600">{crop.suitability_score.toFixed(0)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
-                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  {/* Suitable (60-79%) */}
+                  <button
+                    onClick={() => setSelectedCategory(selectedCategory === 'medium' ? null : 'medium')}
+                    className="w-full flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition cursor-pointer"
+                  >
                     <div className="flex items-center space-x-3">
                       <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                      <span className="text-sm font-medium text-gray-700">Suitable</span>
+                      <span className="text-sm font-medium text-gray-700">Suitable (60-79%)</span>
                     </div>
                     <span className="text-lg font-bold text-blue-600">
-                      {cropRecommendations.filter((r) => r.recommendation === 'recommended').length}
+                      {cropRecommendations.filter((r) => r.suitability_score >= 60 && r.suitability_score < 80).length}
                     </span>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-red-600 rounded-full"></div>
-                      <span className="text-sm font-medium text-gray-700">Not Suitable</span>
+                  </button>
+                  {selectedCategory === 'medium' && cropRecommendations.filter((r) => r.suitability_score >= 60 && r.suitability_score < 80).length > 0 && (
+                    <div className="ml-5 pl-4 border-l-2 border-blue-300 space-y-2">
+                      {cropRecommendations.filter((r) => r.suitability_score >= 60 && r.suitability_score < 80).map((crop) => (
+                        <div key={crop.crop} className="flex items-center justify-between py-2 px-3 bg-white rounded border border-blue-100 hover:border-blue-300 transition">
+                          <span className="text-sm font-medium text-gray-800">{crop.crop}</span>
+                          <span className="text-sm font-bold text-blue-600">{crop.suitability_score.toFixed(0)}%</span>
+                        </div>
+                      ))}
                     </div>
-                    <span className="text-lg font-bold text-red-600">
-                      {cropRecommendations.filter((r) => r.recommendation === 'not_recommended').length}
+                  )}
+
+                  {/* Moderate (<60%) */}
+                  <button
+                    onClick={() => setSelectedCategory(selectedCategory === 'low' ? null : 'low')}
+                    className="w-full flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-200 hover:bg-amber-100 transition cursor-pointer"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-2 h-2 bg-amber-600 rounded-full"></div>
+                      <span className="text-sm font-medium text-gray-700">Moderate (&lt;60%)</span>
+                    </div>
+                    <span className="text-lg font-bold text-amber-600">
+                      {cropRecommendations.filter((r) => r.suitability_score < 60).length}
                     </span>
-                  </div>
+                  </button>
+                  {selectedCategory === 'low' && cropRecommendations.filter((r) => r.suitability_score < 60).length > 0 && (
+                    <div className="ml-5 pl-4 border-l-2 border-amber-300 space-y-2">
+                      {cropRecommendations.filter((r) => r.suitability_score < 60).map((crop) => (
+                        <div key={crop.crop} className="flex items-center justify-between py-2 px-3 bg-white rounded border border-amber-100 hover:border-amber-300 transition">
+                          <span className="text-sm font-medium text-gray-800">{crop.crop}</span>
+                          <span className="text-sm font-bold text-amber-600">{crop.suitability_score.toFixed(0)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

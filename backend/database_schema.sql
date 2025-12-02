@@ -38,7 +38,7 @@ DROP TABLE IF EXISTS crop_types CASCADE;
 DROP TABLE IF EXISTS alembic_version CASCADE;
 
 -- ============================================================================
--- CROP TYPES TABLE (Master list of crop types)
+-- CROP TYPES TABLE (Master list of crop types with growth predictions)
 -- ============================================================================
 CREATE TABLE crop_types (
     id SERIAL PRIMARY KEY,
@@ -47,6 +47,17 @@ CREATE TABLE crop_types (
     scientific_name VARCHAR(200),
     description TEXT,
     common_varieties TEXT,  -- Comma-separated list of common varieties
+
+    -- Growth and prediction data (for smart predictions)
+    growth_duration_days INTEGER,  -- Typical days from planting to harvest
+    water_requirement VARCHAR(20),  -- low, medium, high
+    recommended_irrigation VARCHAR(50),  -- rain-fed, drip, sprinkler, flood, furrow, manual
+    min_yield_per_acre DOUBLE PRECISION,  -- Minimum expected yield in kg per acre
+    max_yield_per_acre DOUBLE PRECISION,  -- Maximum expected yield in kg per acre
+    avg_yield_per_acre DOUBLE PRECISION,  -- Average expected yield in kg per acre
+    yield_unit VARCHAR(20) DEFAULT 'kg',  -- Unit of measurement (kg, tons, bags)
+
+    -- Metadata
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE
@@ -195,7 +206,7 @@ CREATE TABLE crop_images (
     id SERIAL PRIMARY KEY,
     farm_id INTEGER NOT NULL REFERENCES farms(id) ON DELETE CASCADE,
     field_id INTEGER REFERENCES fields(id) ON DELETE SET NULL,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    -- user_id removed: can be derived via farm_id → farms → user_id
     image_url VARCHAR(500) NOT NULL,
     filename VARCHAR(255),
     file_size INTEGER,
@@ -206,7 +217,6 @@ CREATE TABLE crop_images (
 -- Indexes for crop_images table
 CREATE INDEX idx_crop_images_farm_id ON crop_images(farm_id);
 CREATE INDEX idx_crop_images_field_id ON crop_images(field_id);
-CREATE INDEX idx_crop_images_user_id ON crop_images(user_id);
 CREATE INDEX idx_crop_images_status ON crop_images(analysis_status);
 
 -- ============================================================================
@@ -215,7 +225,7 @@ CREATE INDEX idx_crop_images_status ON crop_images(analysis_status);
 CREATE TABLE analysis_results (
     id SERIAL PRIMARY KEY,
     image_id INTEGER NOT NULL REFERENCES crop_images(id) ON DELETE CASCADE,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    -- user_id removed: can be derived via image_id → crop_images → farm_id → farms → user_id
     disease_detected VARCHAR(100),
     confidence_score DOUBLE PRECISION,
     disease_type VARCHAR(100),
@@ -229,7 +239,6 @@ CREATE TABLE analysis_results (
 
 -- Indexes for analysis_results table
 CREATE INDEX idx_analysis_results_image_id ON analysis_results(image_id);
-CREATE INDEX idx_analysis_results_user_id ON analysis_results(user_id);
 
 -- ============================================================================
 -- WEATHER DATA TABLE
@@ -256,7 +265,9 @@ CREATE INDEX idx_weather_data_date ON weather_data(date);
 -- ============================================================================
 CREATE TABLE planting_recommendations (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    -- user_id removed: can be derived via field_id → fields → farm_id → farms → user_id (or farm_id → farms → user_id if field_id is NULL)
+    -- farm_id removed: can be derived via field_id → fields → farm_id (or we keep farm_id if field_id can be NULL)
+    -- DECISION: Keep farm_id as primary reference since field_id is nullable
     farm_id INTEGER NOT NULL REFERENCES farms(id) ON DELETE CASCADE,
     field_id INTEGER REFERENCES fields(id) ON DELETE SET NULL,
     crop_type VARCHAR(100) NOT NULL,
@@ -269,7 +280,6 @@ CREATE TABLE planting_recommendations (
 );
 
 -- Indexes for planting_recommendations table
-CREATE INDEX idx_planting_recommendations_user_id ON planting_recommendations(user_id);
 CREATE INDEX idx_planting_recommendations_farm_id ON planting_recommendations(farm_id);
 CREATE INDEX idx_planting_recommendations_field_id ON planting_recommendations(field_id);
 
@@ -278,7 +288,8 @@ CREATE INDEX idx_planting_recommendations_field_id ON planting_recommendations(f
 -- ============================================================================
 CREATE TABLE harvest_predictions (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    -- user_id removed: can be derived via farm_id → farms → user_id
+    -- DECISION: Keep farm_id as primary reference since field_id is nullable
     farm_id INTEGER NOT NULL REFERENCES farms(id) ON DELETE CASCADE,
     field_id INTEGER REFERENCES fields(id) ON DELETE SET NULL,
     predicted_harvest_date TIMESTAMP WITH TIME ZONE,
@@ -290,7 +301,6 @@ CREATE TABLE harvest_predictions (
 );
 
 -- Indexes for harvest_predictions table
-CREATE INDEX idx_harvest_predictions_user_id ON harvest_predictions(user_id);
 CREATE INDEX idx_harvest_predictions_farm_id ON harvest_predictions(farm_id);
 CREATE INDEX idx_harvest_predictions_field_id ON harvest_predictions(field_id);
 
@@ -396,7 +406,7 @@ CREATE INDEX idx_animals_health_status ON animals(health_status);
 CREATE TABLE crop_recommendations (
     id SERIAL PRIMARY KEY,
     farm_id INTEGER NOT NULL REFERENCES farms(id) ON DELETE CASCADE,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    -- user_id removed: can be derived via farm_id → farms → user_id
 
     -- Recommendation details
     recommended_crop VARCHAR(100) NOT NULL,
@@ -439,7 +449,6 @@ CREATE TABLE crop_recommendations (
 
 -- Indexes for crop_recommendations table
 CREATE INDEX idx_crop_recommendations_farm_id ON crop_recommendations(farm_id);
-CREATE INDEX idx_crop_recommendations_user_id ON crop_recommendations(user_id);
 CREATE INDEX idx_crop_recommendations_crop ON crop_recommendations(recommended_crop);
 CREATE INDEX idx_crop_recommendations_date ON crop_recommendations(recommendation_date);
 

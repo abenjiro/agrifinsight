@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { MapPin, TrendingUp, Sprout, PawPrint, Plus, Trash2, Edit2, Loader, Cloud, Calendar } from 'lucide-react'
+import { MapPin, TrendingUp, Sprout, PawPrint, Plus, Trash2, Edit2, Loader, Cloud, Calendar, Package } from 'lucide-react'
 import { DashboardLayout } from '../components/DashboardLayout'
 import { WeatherWidget } from '../components/WeatherWidget'
 import AddCropModal from '../components/AddCropModal'
@@ -302,6 +302,17 @@ export default function FarmDetailPage() {
                               Expected Harvest: {new Date(crop.expected_harvest_date).toLocaleDateString()}
                             </div>
                           )}
+                        </div>
+
+                        {/* Harvest Prediction Button */}
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <button
+                            onClick={() => navigate(`/crops/${crop.id}/harvest`)}
+                            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm rounded-lg hover:from-purple-700 hover:to-indigo-700 transition shadow-sm"
+                          >
+                            <Package className="w-4 h-4" />
+                            View Harvest Predictions
+                          </button>
                         </div>
                       </div>
                     ))}

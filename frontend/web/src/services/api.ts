@@ -161,8 +161,41 @@ export const recommendationService = {
   },
 }
 
+export const harvestService = {
+  async getHarvestPrediction(cropId: string): Promise<ApiResponse<any>> {
+    const response = await api.get(`/recommendations/harvest/${cropId}`)
+    return response.data
+  },
+
+  async getHarvestCalendar(farmId: string): Promise<ApiResponse<any>> {
+    const response = await api.get(`/recommendations/harvest/calendar/${farmId}`)
+    return response.data
+  },
+}
+
+export const careService = {
+  async getCareRecommendations(cropId: string): Promise<ApiResponse<any>> {
+    const response = await api.get(`/recommendations/care/${cropId}`)
+    return response.data
+  },
+}
+
+export interface CropTypeData {
+  name: string
+  category: string
+  scientific_name: string | null
+  description: string | null
+  growth_duration_days: number | null
+  water_requirement: string | null
+  recommended_irrigation: string | null
+  min_yield_per_acre: number | null
+  max_yield_per_acre: number | null
+  avg_yield_per_acre: number | null
+  yield_unit: string | null
+}
+
 export const cropService = {
-  getCropTypes: wrapApi<[], string[]>(
+  getCropTypes: wrapApi<[], CropTypeData[]>(
     '/crops/types',
     (response) => response.data.crop_types
   ),

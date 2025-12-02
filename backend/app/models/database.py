@@ -11,7 +11,7 @@ from datetime import datetime
 Base = declarative_base()
 
 class CropType(Base):
-    """Crop type master list"""
+    """Crop type master list with growth predictions"""
     __tablename__ = "crop_types"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -20,6 +20,17 @@ class CropType(Base):
     scientific_name = Column(String(200))
     description = Column(Text)
     common_varieties = Column(Text)  # Comma-separated list
+
+    # Growth and prediction data
+    growth_duration_days = Column(Integer)  # Typical days to maturity
+    water_requirement = Column(String(20))  # low, medium, high
+    recommended_irrigation = Column(String(50))  # rain-fed, drip, sprinkler, flood, furrow, manual
+    min_yield_per_acre = Column(Float)  # Minimum yield in kg per acre
+    max_yield_per_acre = Column(Float)  # Maximum yield in kg per acre
+    avg_yield_per_acre = Column(Float)  # Average yield in kg per acre
+    yield_unit = Column(String(20), default='kg')  # kg, tons, bags
+
+    # Additional metadata
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -39,8 +50,6 @@ class User(Base):
 
     # Relationships
     farms = relationship("Farm", back_populates="owner")
-    crop_images = relationship("CropImage", back_populates="user")
-    analysis_results = relationship("AnalysisResult", back_populates="user")
 
 class TokenBlacklist(Base):
     """Token blacklist for logout functionality"""
@@ -100,8 +109,8 @@ class Farm(Base):
 
     # Relationships
     owner = relationship("User", back_populates="farms")
-    fields = relationship("Field", back_populates="farm")
-    crop_images = relationship("CropImage", back_populates="farm")
+    fields = relationship("Field", back_populates="farm", cascade="all, delete-orphan")
+    crop_images = relationship("CropImage", back_populates="farm", cascade="all, delete-orphan")
     crops = relationship("Crop", back_populates="farm", cascade="all, delete-orphan")
     animals = relationship("Animal", back_populates="farm", cascade="all, delete-orphan")
     crop_recommendations = relationship("CropRecommendation", back_populates="farm", cascade="all, delete-orphan")
@@ -127,30 +136,29 @@ class Field(Base):
 class CropImage(Base):
     """Crop image model"""
     __tablename__ = "crop_images"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     farm_id = Column(Integer, ForeignKey("farms.id"), nullable=False)
     field_id = Column(Integer, ForeignKey("fields.id"))
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    # user_id removed: can be derived via farm_id → farms → user_id
     image_url = Column(String(500), nullable=False)
     filename = Column(String(255))
     file_size = Column(Integer)
     analysis_status = Column(String(50), default="pending")  # pending, processing, completed, failed
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
-    
+
     # Relationships
     farm = relationship("Farm", back_populates="crop_images")
     field = relationship("Field", back_populates="crop_images")
-    user = relationship("User", back_populates="crop_images")
-    analysis_results = relationship("AnalysisResult", back_populates="image")
+    analysis_results = relationship("AnalysisResult", back_populates="image", cascade="all, delete-orphan")
 
 class AnalysisResult(Base):
     """Analysis result model"""
     __tablename__ = "analysis_results"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     image_id = Column(Integer, ForeignKey("crop_images.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    # user_id removed: can be derived via image_id → crop_images → farm_id → farms → user_id
     disease_detected = Column(String(100))
     confidence_score = Column(Float)
     disease_type = Column(String(100))
@@ -160,10 +168,9 @@ class AnalysisResult(Base):
     growth_stage = Column(String(50))
     health_score = Column(Float)  # 0-100
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
+
     # Relationships
     image = relationship("CropImage", back_populates="analysis_results")
-    user = relationship("User", back_populates="analysis_results")
 
 class WeatherData(Base):
     """Weather data model"""
@@ -183,9 +190,9 @@ class WeatherData(Base):
 class PlantingRecommendation(Base):
     """Planting recommendation model"""
     __tablename__ = "planting_recommendations"
-    
+
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    # user_id removed: can be derived via farm_id → farms → user_id
     farm_id = Column(Integer, ForeignKey("farms.id"), nullable=False)
     field_id = Column(Integer, ForeignKey("fields.id"))
     crop_type = Column(String(100), nullable=False)
@@ -195,9 +202,8 @@ class PlantingRecommendation(Base):
     soil_conditions = Column(JSON)
     risk_factors = Column(JSON)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
+
     # Relationships
-    user = relationship("User")
     farm = relationship("Farm")
     field = relationship("Field")
 
@@ -206,7 +212,7 @@ class HarvestPrediction(Base):
     __tablename__ = "harvest_predictions"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    # user_id removed: can be derived via farm_id → farms → user_id
     farm_id = Column(Integer, ForeignKey("farms.id"), nullable=False)
     field_id = Column(Integer, ForeignKey("fields.id"))
     predicted_harvest_date = Column(DateTime(timezone=True))
@@ -217,7 +223,6 @@ class HarvestPrediction(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
-    user = relationship("User")
     farm = relationship("Farm")
     field = relationship("Field")
 
@@ -317,7 +322,7 @@ class CropRecommendation(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     farm_id = Column(Integer, ForeignKey("farms.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    # user_id removed: can be derived via farm_id → farms → user_id
 
     # Recommendation details
     recommended_crop = Column(String(100), nullable=False)
@@ -357,4 +362,3 @@ class CropRecommendation(Base):
 
     # Relationships
     farm = relationship("Farm", back_populates="crop_recommendations")
-    user = relationship("User")
