@@ -42,9 +42,20 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // Only redirect to login if we're authenticated but token is invalid
+    // Don't redirect on login/register failures (those are expected)
+    const isAuthEndpoint = error.config?.url?.includes('/auth/login') ||
+                          error.config?.url?.includes('/auth/register')
+
+    if (error.response?.status === 401 && !isAuthEndpoint) {
+      // User's token is invalid, clear it and redirect
       localStorage.removeItem('auth_token')
-      window.location.href = '/login'
+      localStorage.removeItem('user')
+
+      // Only redirect if not already on login page
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   }

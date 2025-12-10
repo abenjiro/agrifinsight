@@ -339,6 +339,7 @@ export function FarmsPage() {
             <div>
               <h6 className="mb-0 font-bold">My Farms</h6>
               <p className="leading-normal text-sm">Manage your farms with geospatial data</p>
+              <br />
             </div>
             <button
               onClick={() => setShowCreateModal(true)}

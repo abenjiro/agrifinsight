@@ -119,3 +119,19 @@ temp/
 # Uploads
 backend/uploads/
 uploads/
+
+# Testing
+.pytest_cache/
+.coverage
+coverage/
+htmlcov/
+.tox/
+*.cover
+.hypothesis/
+coverage.xml
+*.coveragerc
+.cache/
+
+# Frontend testing
+frontend/web/coverage/
+frontend/web/.vitest/

@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import { ReactNode, memo } from 'react'
 import Header from './Header'
 import Footer from './Footer'
 
@@ -6,7 +6,7 @@ interface LandingLayoutProps {
   children: ReactNode
 }
 
-export function LandingLayout({ children }: LandingLayoutProps) {
+export const LandingLayout = memo(function LandingLayout({ children }: LandingLayoutProps) {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -16,5 +16,5 @@ export function LandingLayout({ children }: LandingLayoutProps) {
       <Footer />
     </div>
   )
-}
+})
 

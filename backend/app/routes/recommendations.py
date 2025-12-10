@@ -13,6 +13,8 @@ from app.services.weather_service import weather_service
 from app.services.planting_service import planting_service
 from app.services.harvest_service import harvest_service
 from app.services.ml_crop_recommendation_service import ml_crop_recommendation_service
+from app.services.ai_planting_predictor import get_planting_predictor, predict_planting_time
+from app.services.ai_harvest_predictor import get_harvest_predictor, predict_harvest_time
 
 router = APIRouter(prefix="/api/recommendations", tags=["recommendations"])
 

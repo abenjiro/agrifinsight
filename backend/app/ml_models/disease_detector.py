@@ -14,6 +14,7 @@ from typing import Dict, List, Tuple
 
 from app.ml_models.plant_disease_model import PlantDiseaseClassifier
 from app.ml_models.class_mappings import CLASS_NAMES, TREATMENT_RECOMMENDATIONS, get_class_info
+from app.ml_models.model_loader import get_model_loader
 
 logger = logging.getLogger(__name__)
 
@@ -21,19 +22,33 @@ logger = logging.getLogger(__name__)
 class DiseaseDetector:
     """Disease detection inference service"""
 
-    def __init__(self, model_path: str = None, device: str = None):
+    def __init__(self, model_path: str = None, device: str = None, model_url: str = None):
         """
         Initialize the disease detector
 
         Args:
-            model_path: Path to the trained model file
+            model_path: Path to the trained model file (local)
             device: Device to run inference on ('cuda', 'mps', or 'cpu')
+            model_url: URL to download model from (S3, GCS, HTTP, etc.)
         """
-        if model_path is None:
-            model_path = os.path.join(
-                os.path.dirname(__file__),
-                'disease_detection_model.pth'
-            )
+        # Check if model should be downloaded from URL
+        if model_url:
+            logger.info(f"Loading model from URL: {model_url}")
+            model_loader = get_model_loader()
+            model_path = model_loader.get_model_path(model_url)
+        elif model_path is None:
+            # Check environment variable for model URL
+            model_url_env = os.getenv('MODEL_URL')
+            if model_url_env:
+                logger.info(f"Loading model from MODEL_URL env: {model_url_env}")
+                model_loader = get_model_loader()
+                model_path = model_loader.get_model_path(model_url_env)
+            else:
+                # Fallback to local model
+                model_path = os.path.join(
+                    os.path.dirname(__file__),
+                    'disease_detection_model.pth'
+                )
 
         if device is None:
             # Auto-detect best available device

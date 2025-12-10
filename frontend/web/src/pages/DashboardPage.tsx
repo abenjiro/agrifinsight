@@ -402,7 +402,7 @@ export function DashboardPage() {
       </div>
 
       {/* Quick Actions Card */}
-      <div className="w-full max-w-full px-3 mt-6">
+      {/* <div className="w-full max-w-full px-3 mt-6">
         <div className="relative flex flex-col min-w-0 break-words bg-white border-0 shadow-soft-xl rounded-2xl bg-clip-border">
           <div className="p-4 pb-0 mb-0 bg-white border-b-0 rounded-t-2xl">
             <h6 className="mb-0 font-bold">Quick Actions</h6>
@@ -433,7 +433,7 @@ export function DashboardPage() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
     </>
   )
 }

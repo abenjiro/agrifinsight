@@ -1,0 +1,74 @@
+# Vercel Ignore File
+# Files and directories to exclude from deployment
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+backend/venv/
+backend/env/
+*.egg-info/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+coverage/
+*.cover
+.hypothesis/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.development
+.env.test
+
+# Build artifacts (don't ignore frontend/web/dist!)
+backend/uploads/
+*.log
+
+# AI Models (too large for Vercel)
+ai/models/*.pth
+ai/models/*.pt
+ai/models/*.keras
+ai/models/*.h5
+ai/data/
+
+# Documentation (optional - can include if needed)
+docs/
+*.md
+!VERCEL_DEPLOYMENT.md
+!README.md
+
+# Test files
+backend/tests/
+frontend/web/src/tests/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary
+tmp/
+temp/

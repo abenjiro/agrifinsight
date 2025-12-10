@@ -221,7 +221,31 @@ export default function AddCropModal({ isOpen, onClose, farmId, onSuccess }: Add
   }
 
   const findCropTypeData = (cropName: string): CropTypeData | null => {
-    return cropTypes.find(ct => ct.name === cropName) || null
+    // First try to find in API data
+    const apiData = cropTypes.find(ct => ct.name === cropName)
+    if (apiData && apiData.growth_duration_days) {
+      return apiData
+    }
+
+    // Fallback to hardcoded CROP_DATA
+    const hardcodedData = CROP_DATA[cropName]
+    if (hardcodedData) {
+      return {
+        name: cropName,
+        category: '',
+        scientific_name: null,
+        description: null,
+        growth_duration_days: hardcodedData.growthDurationDays,
+        water_requirement: hardcodedData.waterRequirement,
+        recommended_irrigation: hardcodedData.recommendedIrrigation,
+        min_yield_per_acre: hardcodedData.avgYield.min,
+        max_yield_per_acre: hardcodedData.avgYield.max,
+        avg_yield_per_acre: (hardcodedData.avgYield.min + hardcodedData.avgYield.max) / 2,
+        yield_unit: hardcodedData.avgYield.unit
+      }
+    }
+
+    return null
   }
 
   const autoPredictCropData = (cropTypeName: string, plantingDate?: string) => {

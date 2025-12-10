@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Mail, Lock } from "lucide-react";
-import { showError, showSuccess } from '../utils/sweetalert';
+import { Eye, EyeOff, Mail, Lock, AlertCircle, CheckCircle, X } from "lucide-react";
 import { authService } from '../services/api';
 
 export function LoginPage() {
@@ -11,6 +10,8 @@ export function LoginPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>("");
+  const [success, setSuccess] = useState<string>("");
   const navigate = useNavigate();
 
   // Redirect if already logged in
@@ -28,8 +29,12 @@ export function LoginPage() {
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    e.stopPropagation();
+
+    setError("");
+    setSuccess("");
     setLoading(true);
 
     try {
@@ -40,18 +45,20 @@ export function LoginPage() {
 
       // Store the access token
       localStorage.setItem('auth_token', response.access_token);
-      // localStorage.setItem('refresh_token', response.refresh_token);
 
       // Store user data
       localStorage.setItem('user', JSON.stringify(response.user));
 
-      // Show success message and navigate
-      await showSuccess('Welcome back!', 'Login Successful');
-      navigate('/dashboard');
+      // Show success message
+      setSuccess('Welcome back! Redirecting to dashboard...');
+
+      // Navigate after a brief delay to show the success message
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1000);
     } catch (error: any) {
-      console.error('Login error:', error);
-      showError(error.response?.detail || error.message || 'Login failed. Please check your credentials.', 'Login Failed');
-    } finally {
+      const errorMessage = error.response?.data?.detail || error.response?.detail || error.message || 'Login failed. Please check your credentials.';
+      setError(errorMessage);
       setLoading(false);
     }
   };
@@ -61,7 +68,7 @@ export function LoginPage() {
       className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 
       bg-gradient-to-br from-green-100 via-amber-100 to-emerald-200"
     >
-      <div className="max-w-md w-full space-y-8 bg-white/70 backdrop-blur-md shadow-xl rounded-2xl p-8">
+      <div className="max-w-md w-full space-y-4 bg-white/70 backdrop-blur-md shadow-xl rounded-2xl p-8 overflow-visible">
         {/* Logo / Header */}
         <div className="text-center">
           <div className="flex justify-center">
@@ -82,6 +89,35 @@ export function LoginPage() {
             </Link>
           </p>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="text-sm font-medium text-red-800">Login Failed</h3>
+              <p className="mt-1 text-sm text-red-700">{error}</p>
+            </div>
+            <button
+              onClick={() => setError("")}
+              className="text-red-400 hover:text-red-600 transition-colors"
+              aria-label="Close error message"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Success Message */}
+        {success && (
+          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
+            <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-medium text-green-800">Login Successful</h3>
+              <p className="mt-1 text-sm text-green-700">{success}</p>
+            </div>
+          </div>
+        )}
 
         {/* Form */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -155,9 +191,16 @@ export function LoginPage() {
               />
               <span className="ml-2 text-gray-700">Remember me</span>
             </label>
-            <a href="#" className="text-green-700 hover:text-green-600">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                // TODO: Implement forgot password
+              }}
+              className="text-green-700 hover:text-green-600"
+            >
               Forgot password?
-            </a>
+            </button>
           </div>
 
           {/* Submit Button */}

@@ -1,0 +1,41 @@
+# Vercel Serverless Requirements for AgriFinSight
+# Minimal dependencies for serverless deployment
+
+# FastAPI and web framework
+fastapi==0.109.0
+uvicorn==0.27.0
+python-multipart==0.0.6
+
+# Database (use PostgreSQL for production)
+sqlalchemy==2.0.25
+psycopg2-binary==2.9.9
+alembic==1.13.1
+
+# Authentication
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.1.2
+
+# Environment and configuration
+python-dotenv==1.0.0
+pydantic-settings==2.1.0
+pydantic==2.5.3
+email-validator==2.1.0
+
+# HTTP client
+httpx==0.26.0
+requests==2.31.0
+
+# Model hosting (optional - only install what you need)
+# boto3==1.34.34  # For AWS S3 (uncomment if using S3 with credentials)
+# huggingface_hub==0.20.0  # For Hugging Face Hub (uncomment if using HF)
+
+# Image processing (lighter versions for serverless)
+Pillow==10.2.0
+
+# Data processing
+numpy==1.26.3
+pandas==2.1.4
+
+# Note: TensorFlow and PyTorch are too large for Vercel serverless
+# Use external API or separate AI service for model inference

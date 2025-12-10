@@ -18,6 +18,8 @@ export interface Farm {
   user_id: string
   created_at: string
   updated_at: string
+  latitude: string
+  longitude: string
 }
 
 export interface AnalysisResult {

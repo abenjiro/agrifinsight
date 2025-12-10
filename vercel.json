@@ -1,0 +1,53 @@
+{
+  "version": 2,
+  "name": "agrifinsight",
+  "builds": [
+    {
+      "src": "frontend/web/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "frontend/web/dist"
+      }
+    },
+    {
+      "src": "backend/app/main.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "backend/app/main.py"
+    },
+    {
+      "src": "/docs",
+      "dest": "backend/app/main.py"
+    },
+    {
+      "src": "/redoc",
+      "dest": "backend/app/main.py"
+    },
+    {
+      "src": "/openapi.json",
+      "dest": "backend/app/main.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "frontend/web/dist/$1"
+    }
+  ],
+  "env": {
+    "PYTHONPATH": "backend"
+  },
+  "build": {
+    "env": {
+      "PYTHONPATH": "backend"
+    }
+  },
+  "functions": {
+    "backend/app/main.py": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  }
+}

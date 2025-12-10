@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Outlet } from 'react-router-dom'
 import { DashboardLayout } from './components/DashboardLayout'
 import { LandingLayout } from './components/LandingLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -16,41 +16,50 @@ import { HarvestPredictionsPage } from './pages/HarvestPredictionsPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
+import { memo } from 'react'
+
+// Wrapper components MUST be defined OUTSIDE App to prevent recreation on every render
+// Using memo to prevent re-renders when App re-renders
+const HomePageWrapper = memo(() => {
+  return <LandingLayout><HomePage /></LandingLayout>
+})
+HomePageWrapper.displayName = 'HomePageWrapper'
+
+const AIFeaturesPageWrapper = memo(() => {
+  return <LandingLayout><AIFeaturesPage /></LandingLayout>
+})
+AIFeaturesPageWrapper.displayName = 'AIFeaturesPageWrapper'
+
+const LoginPageWrapper = memo(() => {
+  return <LandingLayout><LoginPage /></LandingLayout>
+})
+LoginPageWrapper.displayName = 'LoginPageWrapper'
+
+const RegisterPageWrapper = memo(() => {
+  return <LandingLayout><RegisterPage /></LandingLayout>
+})
+RegisterPageWrapper.displayName = 'RegisterPageWrapper'
+
+const AboutUsPageWrapper = memo(() => {
+  return <LandingLayout><AboutUsPage /></LandingLayout>
+})
+AboutUsPageWrapper.displayName = 'AboutUsPageWrapper'
+
+const ContactUsPageWrapper = memo(() => {
+  return <LandingLayout><ContactUsPage /></LandingLayout>
+})
+ContactUsPageWrapper.displayName = 'ContactUsPageWrapper'
 
 function App() {
   return (
     <Routes>
       {/* Landing pages with Header and Footer */}
-      <Route path="/" element={
-        <LandingLayout>
-          <HomePage />
-        </LandingLayout>
-      } />
-      <Route path="/ai-features" element={
-        <LandingLayout>
-          <AIFeaturesPage />
-        </LandingLayout>
-      } />
-      <Route path="/login" element={
-        <LandingLayout>
-          <LoginPage />
-        </LandingLayout>
-      } />
-      <Route path="/register" element={
-        <LandingLayout>
-          <RegisterPage />
-        </LandingLayout>
-      } />
-      <Route path="/about" element={
-        <LandingLayout>
-          <AboutUsPage />
-        </LandingLayout>
-      } />
-      <Route path="/contact" element={
-        <LandingLayout>
-          <ContactUsPage />
-        </LandingLayout>
-      } />
+      <Route path="/" element={<HomePageWrapper />} />
+      <Route path="/ai-features" element={<AIFeaturesPageWrapper />} />
+      <Route path="/login" element={<LoginPageWrapper />} />
+      <Route path="/register" element={<RegisterPageWrapper />} />
+      <Route path="/about" element={<AboutUsPageWrapper />} />
+      <Route path="/contact" element={<ContactUsPageWrapper />} />
 
       {/* Dashboard pages with DashboardLayout - Protected Routes */}
       <Route path="/dashboard" element={

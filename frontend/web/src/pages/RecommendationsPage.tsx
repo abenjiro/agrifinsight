@@ -61,13 +61,67 @@ export function RecommendationsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchFarms()
+    let isMounted = true
+
+    const loadFarms = async () => {
+      if (!isMounted) return
+      setLoading(true)
+      try {
+        const token = localStorage.getItem('auth_token')
+        const response = await fetch('http://localhost:8000/api/farms/', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (!response.ok) throw new Error('Failed to fetch farms')
+        if (!isMounted) return
+
+        const data = await response.json()
+        const farmsList = data.data || data
+        setFarms(farmsList)
+
+        // Auto-select first farm with coordinates
+        const farmWithCoords = farmsList.find((f: Farm) => f.latitude && f.longitude)
+        if (farmWithCoords && isMounted) {
+          setSelectedFarm(farmWithCoords)
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          console.error('Error fetching farms:', err)
+          setError(err.message)
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    loadFarms()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   useEffect(() => {
-    if (selectedFarm && selectedFarm.latitude && selectedFarm.longitude) {
-      fetchRecommendations()
-      fetchWeather()
+    const abortController = new AbortController()
+
+    const loadData = async () => {
+      if (selectedFarm && selectedFarm.latitude && selectedFarm.longitude) {
+        await fetchRecommendations(abortController.signal)
+        if (!abortController.signal.aborted) {
+          await fetchWeather(abortController.signal)
+        }
+      }
+    }
+
+    loadData()
+
+    return () => {
+      abortController.abort()
     }
   }, [selectedFarm])
 
@@ -101,7 +155,7 @@ export function RecommendationsPage() {
     }
   }
 
-  const fetchRecommendations = async () => {
+  const fetchRecommendations = async (signal?: AbortSignal) => {
     if (!selectedFarm) return
 
     try {
@@ -112,7 +166,8 @@ export function RecommendationsPage() {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
-          }
+          },
+          signal
         }
       )
 
@@ -121,11 +176,13 @@ export function RecommendationsPage() {
       const data = await response.json()
       setCropRecommendations(data.comparison.comparison || [])
     } catch (err: any) {
-      console.error('Error fetching recommendations:', err)
+      if (err.name !== 'AbortError') {
+        console.error('Error fetching recommendations:', err)
+      }
     }
   }
 
-  const fetchWeather = async () => {
+  const fetchWeather = async (signal?: AbortSignal) => {
     if (!selectedFarm) return
 
     setWeatherLoading(true)
@@ -137,7 +194,8 @@ export function RecommendationsPage() {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
-          }
+          },
+          signal
         }
       )
 
@@ -146,7 +204,9 @@ export function RecommendationsPage() {
       const data = await response.json()
       setWeatherForecast(data.forecast.forecast || [])
     } catch (err: any) {
-      console.error('Error fetching weather:', err)
+      if (err.name !== 'AbortError') {
+        console.error('Error fetching weather:', err)
+      }
     } finally {
       setWeatherLoading(false)
     }

@@ -20,8 +20,8 @@ export function DashboardLayout({ children }: LayoutProps) {
           <DashboardHeader />
 
           {/* Page Content Container */}
-          <div className="w-full px-6 py-6 mx-auto">
-            <div className="flex flex-wrap -mx-3">
+          <div className="w-full px-6 py-6 mx-auto xl:pl-12">
+            <div className="flex flex-wrap -mx-3 xl:ml-2">
               {children}
             </div>
           </div>
