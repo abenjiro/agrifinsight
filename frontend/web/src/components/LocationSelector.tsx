@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
-import { Map as MapIcon, Navigation } from 'lucide-react'
+import { Map as MapIcon } from 'lucide-react'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   Sprout, Calendar, TrendingUp, AlertCircle, CheckCircle2, Clock,
   Thermometer, Droplets, Cloud, ArrowLeft, Loader, Info, ChevronRight,
-  MapPin, Beaker, Plus, X
+  Beaker, Plus, X
 } from 'lucide-react'
 import { showError, showSuccess } from '../utils/sweetalert'
 import { cropService } from '../services/api'

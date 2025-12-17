@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Camera,
-  TrendingUp,
   AlertTriangle,
   CheckCircle,
   Upload,
@@ -59,7 +58,6 @@ export function DashboardPage() {
     healthyPercentage: 0
   })
   const [loading, setLoading] = useState(true)
-  const [userName, setUserName] = useState('')
 
   useEffect(() => {
     fetchDashboardData()
@@ -67,8 +65,6 @@ export function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}')
-      setUserName(user.email?.split('@')[0] || 'User')
 
       // Fetch farms using farmService
       const response = await farmService.getFarms()

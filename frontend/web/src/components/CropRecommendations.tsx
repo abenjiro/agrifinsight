@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Sparkles, TrendingUp, Droplet, Calendar, DollarSign, ChevronDown, ChevronUp, Loader } from 'lucide-react'
+import { Sparkles, TrendingUp, Droplet, Calendar, ChevronDown, ChevronUp, Loader } from 'lucide-react'
 import { cropRecommendationService } from '../services/api'
 import type { CropRecommendation } from '../types'
 

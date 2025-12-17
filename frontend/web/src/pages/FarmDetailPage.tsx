@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { MapPin, TrendingUp, Sprout, PawPrint, Plus, Trash2, Edit2, Loader, Cloud, Calendar, Package } from 'lucide-react'
+import { MapPin, Sprout, PawPrint, Plus, Trash2, Edit2, Loader, Calendar, Package } from 'lucide-react'
 import { DashboardLayout } from '../components/DashboardLayout'
 import { WeatherWidget } from '../components/WeatherWidget'
 import AddCropModal from '../components/AddCropModal'

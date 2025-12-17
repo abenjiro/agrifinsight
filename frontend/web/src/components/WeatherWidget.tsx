@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Cloud, Droplets, Wind, Thermometer, Eye, Gauge, Sunrise, Sunset, Calendar } from 'lucide-react'
+import { Cloud, Droplets, Wind, Gauge, Sunrise, Sunset, Calendar } from 'lucide-react'
 
 interface CurrentWeather {
   temperature: number

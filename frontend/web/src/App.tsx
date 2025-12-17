@@ -1,4 +1,4 @@
-import { Routes, Route, Outlet } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import { DashboardLayout } from './components/DashboardLayout'
 import { LandingLayout } from './components/LandingLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'

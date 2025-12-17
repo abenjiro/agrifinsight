@@ -4,8 +4,6 @@ import {
   BarChart3,
   Camera,
   Lightbulb,
-  Settings,
-  HelpCircle,
   Sprout,
   X
 } from 'lucide-react'

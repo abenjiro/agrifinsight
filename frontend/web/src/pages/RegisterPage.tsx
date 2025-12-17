@@ -49,8 +49,10 @@ export function RegisterPage() {
 
     try {
       const response:any = await authService.register({
+        name: formData.name,
         email: formData.email,
         password: formData.password,
+        confirmPassword: formData.confirmPassword,
         phone: formData.phone || undefined,
         role: formData.role
       })

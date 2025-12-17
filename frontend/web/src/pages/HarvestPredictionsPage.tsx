@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Sprout, Calendar, TrendingUp, AlertCircle, CheckCircle2, Clock,
-  ArrowLeft, Loader, Droplets, Thermometer, Cloud, Gauge,
-  Target, Award, ClipboardList, Info, AlertTriangle,
-  Package, Truck, Briefcase, Sun, CloudRain
+  ArrowLeft, Loader, Droplets, Thermometer, Cloud,
+  Target, ClipboardList, Info, AlertTriangle,
+  Package, Briefcase, CloudRain
 } from 'lucide-react'
-import { showError, showSuccess } from '../utils/sweetalert'
+import { showError } from '../utils/sweetalert'
 
 interface HarvestPrediction {
   crop_type: string

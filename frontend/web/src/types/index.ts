@@ -67,6 +67,7 @@ export interface RegisterData {
   password: string
   confirmPassword: string
   role: 'farmer' | 'analyst'
+  phone?: string
 }
 
 export interface Crop {
