@@ -7,7 +7,6 @@ import {
   Leaf,
   AlertTriangle,
   Activity,
-  Printer,
   Loader,
   RefreshCw
 } from 'lucide-react'
@@ -40,7 +39,7 @@ export function ReportsPage() {
   const [analysisStats, setAnalysisStats] = useState<AnalysisStats | null>(null)
   const [cropStats, setCropStats] = useState<CropStats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [dateRange, setDateRange] = useState('30') // days
+  const [dateRange] = useState('30') // days
 
   useEffect(() => {
     fetchFarms()
