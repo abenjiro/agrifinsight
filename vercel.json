@@ -6,7 +6,7 @@
       "src": "frontend/web/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "frontend/web/dist"
+        "distDir": "dist"
       }
     },
     {
@@ -30,10 +30,6 @@
     {
       "src": "/openapi.json",
       "dest": "backend/app/main.py"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "frontend/web/dist/$1"
     }
   ],
   "env": {
