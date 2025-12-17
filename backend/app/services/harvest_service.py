@@ -384,10 +384,11 @@ class HarvestService:
 
         days_until = maturity_info['days_until_maturity']
 
-        # General harvest recommendations
+        # General harvest recommendations based on crop stage
         if days_until <= 0:
             advice['recommendations'].append("Crop is ready for harvest")
             advice['recommendations'].append("Choose dry weather for harvesting")
+            advice['recommendations'].append("Harvest during early morning or late afternoon")
 
             if weather_forecast:
                 weather_rec = weather_forecast.get('harvest_advice', {})
@@ -402,28 +403,77 @@ class HarvestService:
             advice['recommendations'].append(f"Prepare for harvest in {days_until} days")
             advice['recommendations'].append("Arrange for labor and equipment")
             advice['recommendations'].append("Prepare storage facilities")
+            advice['recommendations'].append("Start inspecting crop daily for maturity signs")
+
+        elif days_until <= 21:
+            advice['recommendations'].append(f"Harvest approaching in {days_until} days")
+            advice['recommendations'].append("Monitor crop development and maturity indicators")
+            advice['recommendations'].append("Begin planning harvest logistics")
+            advice['recommendations'].append("Ensure storage areas are clean and ready")
+
+        elif days_until <= 60:
+            advice['recommendations'].append(f"Crop is in mid-growth stage")
+            advice['recommendations'].append("Focus on proper crop maintenance and care")
+            advice['recommendations'].append("Monitor for pests and diseases regularly")
+            advice['recommendations'].append(f"Expected harvest in approximately {days_until} days")
+
+        else:
+            # Early stage crops
+            advice['recommendations'].append("Crop is in early growth stage")
+            advice['recommendations'].append("Ensure proper watering and fertilization")
+            advice['recommendations'].append("Keep area weed-free for optimal growth")
+            advice['recommendations'].append(f"Harvest expected in {days_until} days")
 
         # Crop-specific advice
         if crop_type.lower() == 'maize':
             if days_until <= 0:
                 advice['recommendations'].append("Check moisture content (should be below 25%)")
-                advice['recommendations'].append("Harvest early morning for best quality")
+                advice['recommendations'].append("Inspect kernels for hard dent stage")
+            elif days_until <= 21:
+                advice['recommendations'].append("Watch for silk browning and husk drying")
 
         elif crop_type.lower() == 'rice':
             if days_until <= 0:
                 advice['recommendations'].append("Drain field 7-10 days before harvest")
                 advice['recommendations'].append("Harvest at 20-25% moisture")
+            elif days_until <= 21:
+                advice['recommendations'].append("Monitor grain color change to golden yellow")
 
         elif crop_type.lower() == 'tomato':
             advice['recommendations'].append("Harvest fruits as they ripen (multiple pickings)")
-            advice['recommendations'].append("Pick early morning for longer shelf life")
+            if days_until <= 0:
+                advice['recommendations'].append("Pick early morning for longer shelf life")
+                advice['recommendations'].append("Handle gently to avoid bruising")
+
+        elif crop_type.lower() == 'cassava':
+            if days_until <= 30:
+                advice['recommendations'].append("Check for yellowing leaves (maturity sign)")
+                advice['recommendations'].append("Test harvest a few plants to check tuber size")
+
+        elif crop_type.lower() == 'soybean':
+            if days_until <= 0:
+                advice['recommendations'].append("Harvest when pods are brown and seeds rattle")
+            elif days_until <= 14:
+                advice['recommendations'].append("Monitor leaf yellowing and pod color change")
+
+        elif crop_type.lower() == 'groundnut':
+            if days_until <= 0:
+                advice['recommendations'].append("Dig test plants to check pod maturity")
+                advice['recommendations'].append("Look for darkened inner pod walls")
 
         # Warnings
         if maturity_info['is_overdue']:
             advice['warnings'].append("URGENT: Crop is overdue for harvest - quality may be deteriorating")
+            advice['warnings'].append("Harvest immediately to minimize losses")
 
         if growth_stage == 'overdue':
             advice['warnings'].append("Risk of yield loss and pest damage increases with delay")
+            advice['warnings'].append("Check for signs of over-ripening or pest infestation")
+
+        # Weather considerations for all stages
+        if days_until <= 30:
+            advice['weather_considerations'].append("Monitor weather forecast for harvest planning")
+            advice['weather_considerations'].append("Avoid harvesting during or immediately after rain")
 
         return advice
 

@@ -76,31 +76,34 @@ export default function CropRecommendations({ farmId }: CropRecommendationsProps
   return (
     <div className="bg-white rounded-lg shadow">
       {/* Compact Header */}
-      <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-green-50 to-blue-50">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-green-600" />
-          <h3 className="text-sm font-semibold text-gray-900">AI Recommendations</h3>
-          {recommendations.length > 0 && (
-            <span className="text-xs text-gray-600">({recommendations.length} crops)</span>
-          )}
+      <div className="px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-green-50 to-blue-50">
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-green-600" />
+            <h3 className="text-sm font-semibold text-gray-900">Crop Recommendations</h3>
+            {recommendations.length > 0 && (
+              <span className="text-xs text-gray-600">({recommendations.length} crops)</span>
+            )}
+          </div>
+          <button
+            onClick={handleGenerateRecommendations}
+            disabled={generating}
+            className="px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 flex items-center gap-1.5 text-xs"
+          >
+            {generating ? (
+              <>
+                <Loader className="h-3 w-3 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-3 w-3" />
+                Generate
+              </>
+            )}
+          </button>
         </div>
-        <button
-          onClick={handleGenerateRecommendations}
-          disabled={generating}
-          className="px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 flex items-center gap-1.5 text-xs"
-        >
-          {generating ? (
-            <>
-              <Loader className="h-3 w-3 animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-3 w-3" />
-              Generate
-            </>
-          )}
-        </button>
+        <p className="text-xs text-gray-600">AI-powered suggestions for the best crops for your farm</p>
       </div>
 
       {error && (

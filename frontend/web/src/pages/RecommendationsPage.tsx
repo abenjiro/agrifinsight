@@ -57,6 +57,7 @@ export function RecommendationsPage() {
   const [weatherForecast, setWeatherForecast] = useState<WeatherForecast[]>([])
   const [loading, setLoading] = useState(true)
   const [weatherLoading, setWeatherLoading] = useState(false)
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
@@ -158,6 +159,7 @@ export function RecommendationsPage() {
   const fetchRecommendations = async (signal?: AbortSignal) => {
     if (!selectedFarm) return
 
+    setRecommendationsLoading(true)
     try {
       const token = localStorage.getItem('auth_token')
       const response = await fetch(
@@ -179,6 +181,8 @@ export function RecommendationsPage() {
       if (err.name !== 'AbortError') {
         console.error('Error fetching recommendations:', err)
       }
+    } finally {
+      setRecommendationsLoading(false)
     }
   }
 
@@ -386,7 +390,13 @@ export function RecommendationsPage() {
                 </div>
               </div>
               <div className="flex-auto p-4 space-y-4">
-                {cropRecommendations.length === 0 ? (
+                {recommendationsLoading ? (
+                  <div className="text-center py-12">
+                    <Loader className="w-12 h-12 animate-spin text-green-600 mx-auto mb-4" />
+                    <p className="text-gray-700 font-semibold text-lg mb-2">Loading recommendations for {selectedFarm.name}...</p>
+                    <p className="text-gray-500 text-sm">Analyzing weather patterns, soil conditions, and seasonal timing</p>
+                  </div>
+                ) : cropRecommendations.length === 0 ? (
                   <div className="text-center py-8">
                     <Loader className="w-8 h-8 animate-spin text-green-600 mx-auto mb-3" />
                     <p className="text-gray-600">Loading crop recommendations...</p>
@@ -602,7 +612,7 @@ export function RecommendationsPage() {
             </div>
 
             {/* Quick Actions Card */}
-            <div className="relative flex flex-col min-w-0 break-words bg-gradient-to-tl from-purple-700 to-pink-500 border-0 shadow-soft-xl rounded-2xl bg-clip-border">
+            {/* <div className="relative flex flex-col min-w-0 break-words bg-gradient-to-tl from-purple-700 to-pink-500 border-0 shadow-soft-xl rounded-2xl bg-clip-border">
               <div className="flex-auto p-4">
                 <div className="text-white">
                   <h6 className="mb-2 text-white font-semibold">Ready to Plant?</h6>
@@ -618,7 +628,7 @@ export function RecommendationsPage() {
                   </button>
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
         </>
       )}

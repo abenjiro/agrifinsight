@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
-  Sprout, Calendar, TrendingUp, AlertCircle, CheckCircle2,
+  Sprout, Calendar, TrendingUp, AlertCircle, CheckCircle2, Clock,
   ArrowLeft, Loader, Droplets, Thermometer, Cloud, Gauge,
   Target, Award, ClipboardList, Info, AlertTriangle,
   Package, Truck, Briefcase, Sun, CloudRain
@@ -184,9 +184,14 @@ export function HarvestPredictionsPage() {
             </div>
 
             <div className="text-right">
-              <div className="text-sm text-gray-500">Crop Age</div>
+              <div className="text-sm text-gray-500">
+                {prediction.crop_age_days < 0 ? 'Planting In' : 'Crop Age'}
+              </div>
               <div className="text-2xl font-bold text-green-600">
-                {prediction.crop_age_days} days
+                {prediction.crop_age_days < 0
+                  ? `${Math.abs(prediction.crop_age_days)} days`
+                  : `${prediction.crop_age_days} days`
+                }
               </div>
             </div>
           </div>
@@ -216,10 +221,23 @@ export function HarvestPredictionsPage() {
             </div>
 
             <div className="text-center">
-              <div className="text-4xl font-bold">
-                {prediction.harvest_readiness.readiness_percentage}%
-              </div>
-              <div className="text-sm opacity-75">Ready</div>
+              {prediction.harvest_readiness.readiness_percentage < 0 ? (
+                <>
+                  <div className="text-3xl font-bold">
+                    Not Planted
+                  </div>
+                  <div className="text-xs opacity-75 mt-1">
+                    {Math.abs(prediction.harvest_readiness.readiness_percentage)}% before planting
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-4xl font-bold">
+                    {prediction.harvest_readiness.readiness_percentage}%
+                  </div>
+                  <div className="text-sm opacity-75">Ready</div>
+                </>
+              )}
             </div>
           </div>
 
@@ -227,7 +245,9 @@ export function HarvestPredictionsPage() {
           <div className="mt-4 bg-white bg-opacity-50 rounded-full h-3 overflow-hidden">
             <div
               className="h-full bg-current transition-all duration-500"
-              style={{ width: `${prediction.harvest_readiness.readiness_percentage}%` }}
+              style={{
+                width: `${Math.max(0, Math.min(100, prediction.harvest_readiness.readiness_percentage))}%`
+              }}
             />
           </div>
         </div>
@@ -251,7 +271,10 @@ export function HarvestPredictionsPage() {
                     {formatDate(prediction.maturity_timeline.estimated_harvest_date)}
                   </div>
                   <div className="text-sm text-gray-500 mt-1">
-                    In {prediction.maturity_timeline.days_until_maturity} days
+                    {prediction.maturity_timeline.days_until_maturity < 0
+                      ? `Overdue by ${Math.abs(prediction.maturity_timeline.days_until_maturity)} days`
+                      : `In ${prediction.maturity_timeline.days_until_maturity} days`
+                    }
                   </div>
                 </div>
                 <Target className="w-8 h-8 text-green-600" />
@@ -396,7 +419,18 @@ export function HarvestPredictionsPage() {
             Harvest Recommendations
           </h2>
 
-          <div className="space-y-4">
+          {/* Check if there's any content to display */}
+          {!prediction.harvest_recommendations.optimal_timing &&
+           prediction.harvest_recommendations.warnings.length === 0 &&
+           prediction.harvest_recommendations.recommendations.length === 0 &&
+           prediction.harvest_recommendations.weather_considerations.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Info className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+              <p>No specific recommendations available at this time.</p>
+              <p className="text-sm mt-2">Check back as your crop matures for harvest timing advice.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
             {/* Optimal Timing */}
             {prediction.harvest_recommendations.optimal_timing && (
               <div className="p-4 bg-green-50 rounded-lg border border-green-200">
@@ -452,7 +486,8 @@ export function HarvestPredictionsPage() {
                 </ul>
               </div>
             )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 

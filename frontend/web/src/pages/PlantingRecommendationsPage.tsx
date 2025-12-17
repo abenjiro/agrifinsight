@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   Sprout, Calendar, TrendingUp, AlertCircle, CheckCircle2, Clock,
   Thermometer, Droplets, Cloud, ArrowLeft, Loader, Info, ChevronRight,
-  MapPin, Beaker
+  MapPin, Beaker, Plus, X
 } from 'lucide-react'
-import { showError } from '../utils/sweetalert'
+import { showError, showSuccess } from '../utils/sweetalert'
+import { cropService } from '../services/api'
 
 interface PlantingRecommendation {
   crop_type: string
@@ -67,6 +68,16 @@ export function PlantingRecommendationsPage() {
   const [farmName, setFarmName] = useState<string>('')
   const [view, setView] = useState<'comparison' | 'detailed'>('comparison')
   const [apiErrors, setApiErrors] = useState<any[]>([])
+
+  // Quick Add Crop Modal State
+  const [showAddCropModal, setShowAddCropModal] = useState(false)
+  const [addingCrop, setAddingCrop] = useState(false)
+  const [cropToAdd, setCropToAdd] = useState<CropComparison | null>(null)
+  const [quickAddForm, setQuickAddForm] = useState({
+    quantity: '',
+    quantity_unit: 'acres',
+    notes: ''
+  })
 
   useEffect(() => {
     if (farmId) {
@@ -150,6 +161,53 @@ export function PlantingRecommendationsPage() {
     }
   }
 
+  const openQuickAddCropModal = (crop: CropComparison) => {
+    setCropToAdd(crop)
+    setQuickAddForm({
+      quantity: '',
+      quantity_unit: 'acres',
+      notes: `Recommended planting date: ${new Date(crop.planting_date).toLocaleDateString()}`
+    })
+    setShowAddCropModal(true)
+  }
+
+  const handleQuickAddCrop = async () => {
+    if (!cropToAdd || !farmId) return
+
+    if (!quickAddForm.quantity || parseFloat(quickAddForm.quantity) <= 0) {
+      showError('Please enter a valid area')
+      return
+    }
+
+    setAddingCrop(true)
+    try {
+      await cropService.createCrop(parseInt(farmId), {
+        farm_id: parseInt(farmId),
+        crop_type: cropToAdd.crop,
+        planting_date: cropToAdd.planting_date,
+        expected_harvest_date: cropToAdd.harvest_date,
+        quantity: parseFloat(quickAddForm.quantity),
+        quantity_unit: quickAddForm.quantity_unit,
+        notes: quickAddForm.notes || undefined
+      })
+
+      showSuccess(`${cropToAdd.crop} has been added to your farm!`)
+      setShowAddCropModal(false)
+      setCropToAdd(null)
+      setQuickAddForm({ quantity: '', quantity_unit: 'acres', notes: '' })
+
+      // Navigate to farm detail page after a brief delay
+      setTimeout(() => {
+        navigate(`/farms/${farmId}`)
+      }, 1500)
+    } catch (error: any) {
+      console.error('Error adding crop:', error)
+      showError(error.response?.data?.detail || 'Failed to add crop')
+    } finally {
+      setAddingCrop(false)
+    }
+  }
+
   const getRecommendationColor = (rec: string) => {
     switch (rec) {
       case 'highly_recommended': return 'bg-green-100 text-green-800 border-green-200'
@@ -203,9 +261,10 @@ export function PlantingRecommendationsPage() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
                 <Sprout className="w-8 h-8 text-green-600" />
-                Planting Recommendations
+                Planting Calendar
               </h1>
               <p className="text-gray-600 mt-1">{farmName}</p>
+              <p className="text-sm text-gray-500 mt-1">When to plant different crops based on current conditions</p>
             </div>
 
             {view === 'detailed' && (
@@ -220,6 +279,21 @@ export function PlantingRecommendationsPage() {
                 View All Crops
               </button>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Info Notice */}
+      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
+        <div className="flex items-start gap-3">
+          <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-blue-900">
+            <p className="font-medium mb-1">Personalized Recommendations</p>
+            <p className="text-blue-700">
+              These recommendations are tailored to your farm's specific conditions including location (GPS),
+              climate (temperature & rainfall), soil type, and current weather patterns.
+              <span className="font-medium"> Update your farm's soil data for even more accurate recommendations.</span>
+            </p>
           </div>
         </div>
       </div>
@@ -262,8 +336,7 @@ export function PlantingRecommendationsPage() {
             {comparison.map((crop) => (
               <div
                 key={crop.crop}
-                onClick={() => fetchDetailedRecommendation(crop.crop)}
-                className="border border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-green-300 transition cursor-pointer group"
+                className="border border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-green-300 transition group"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
@@ -290,13 +363,27 @@ export function PlantingRecommendationsPage() {
                   </div>
                 </div>
 
-                <p className="text-xs text-gray-600 line-clamp-2 mb-3">
+                <p className="text-xs text-gray-600 line-clamp-2 mb-4">
                   {crop.summary}
                 </p>
 
-                <div className="flex items-center justify-end text-green-600 text-sm font-medium group-hover:gap-2 transition-all">
-                  View Details
-                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      openQuickAddCropModal(crop)
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add to Farm
+                  </button>
+                  <button
+                    onClick={() => fetchDetailedRecommendation(crop.crop)}
+                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 transition"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -328,6 +415,22 @@ export function PlantingRecommendationsPage() {
             <p className="mt-4 text-green-50 text-sm leading-relaxed">
               {recommendation.summary}
             </p>
+
+            {/* Quick Add Button in Detailed View */}
+            <div className="mt-4 pt-4 border-t border-white/20">
+              <button
+                onClick={() => {
+                  const cropComparison = comparison.find(c => c.crop === selectedCrop)
+                  if (cropComparison) {
+                    openQuickAddCropModal(cropComparison)
+                  }
+                }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white text-green-700 rounded-lg hover:bg-green-50 transition font-semibold"
+              >
+                <Plus className="w-5 h-5" />
+                Add {selectedCrop} to Farm
+              </button>
+            </div>
           </div>
 
           {/* Planting Window */}
@@ -542,6 +645,127 @@ export function PlantingRecommendationsPage() {
                   <span className="text-sm text-gray-700">{item}</span>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Add Crop Modal */}
+      {showAddCropModal && cropToAdd && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-6 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white/20 p-2 rounded-lg">
+                    <Sprout className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">Add {cropToAdd.crop}</h3>
+                    <p className="text-green-100 text-sm">Quick add to your farm</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAddCropModal(false)}
+                  className="text-white/80 hover:text-white transition"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              {/* Pre-filled Information */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Recommended Planting:</span>
+                  <span className="font-semibold text-gray-900">
+                    {new Date(cropToAdd.planting_date).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Expected Harvest:</span>
+                  <span className="font-semibold text-gray-900">
+                    {new Date(cropToAdd.harvest_date).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Suitability Score:</span>
+                  <span className="font-semibold text-green-600">
+                    {cropToAdd.suitability_score.toFixed(0)}%
+                  </span>
+                </div>
+              </div>
+
+              {/* Area Input (Required) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Area to Plant <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.0"
+                    value={quickAddForm.quantity}
+                    onChange={(e) => setQuickAddForm({ ...quickAddForm, quantity: e.target.value })}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                  <select
+                    value={quickAddForm.quantity_unit}
+                    onChange={(e) => setQuickAddForm({ ...quickAddForm, quantity_unit: e.target.value })}
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    <option value="acres">Acres</option>
+                    <option value="hectares">Hectares</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Notes (Optional) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Notes (Optional)
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Add any notes about this crop..."
+                  value={quickAddForm.notes}
+                  onChange={(e) => setQuickAddForm({ ...quickAddForm, notes: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 px-6 py-4 rounded-b-2xl flex gap-3">
+              <button
+                onClick={() => setShowAddCropModal(false)}
+                disabled={addingCrop}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleQuickAddCrop}
+                disabled={addingCrop || !quickAddForm.quantity}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {addingCrop ? (
+                  <>
+                    <Loader className="w-4 h-4 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    Add Crop
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { DashboardLayout } from '../components/DashboardLayout'
 import { WeatherWidget } from '../components/WeatherWidget'
 import AddCropModal from '../components/AddCropModal'
 import AddAnimalModal from '../components/AddAnimalModal'
+import EditCropModal from '../components/EditCropModal'
 import CropRecommendations from '../components/CropRecommendations'
 import { farmService, cropService, animalService } from '../services/api'
 import type { Farm, Crop, Animal } from '../types'
@@ -19,6 +20,8 @@ export default function FarmDetailPage() {
   const [showAddCropModal, setShowAddCropModal] = useState(false)
   const [showAddAnimalModal, setShowAddAnimalModal] = useState(false)
   const [activeTab, setActiveTab] = useState<'crops' | 'animals'>('crops')
+  const [editingCrop, setEditingCrop] = useState<Crop | null>(null)
+  const [showEditCropModal, setShowEditCropModal] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -229,7 +232,7 @@ export default function FarmDetailPage() {
                         className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition shadow-md"
                       >
                         <Calendar className="w-4 h-4" />
-                        Planting Recommendations
+                        Planting Calendar
                       </button>
                 
                       
@@ -262,8 +265,19 @@ export default function FarmDetailPage() {
                           </div>
                           <div className="flex gap-2">
                             <button
+                              onClick={() => {
+                                setEditingCrop(crop)
+                                setShowEditCropModal(true)
+                              }}
+                              className="text-blue-600 hover:text-blue-700"
+                              title="Edit crop"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </button>
+                            <button
                               onClick={() => handleDeleteCrop(crop.id)}
                               className="text-red-600 hover:text-red-700"
+                              title="Delete crop"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -426,6 +440,18 @@ export default function FarmDetailPage() {
             onSuccess={loadFarmData}
           />
         </>
+      )}
+
+      {/* Edit Crop Modal */}
+      {showEditCropModal && editingCrop && (
+        <EditCropModal
+          crop={editingCrop}
+          onClose={() => {
+            setShowEditCropModal(false)
+            setEditingCrop(null)
+          }}
+          onUpdate={loadFarmData}
+        />
       )}
     </DashboardLayout>
   )

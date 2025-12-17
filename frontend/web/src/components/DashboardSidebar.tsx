@@ -109,11 +109,11 @@ export function DashboardSidebar() {
         </div>
 
         {/* Compact Help Link at Bottom */}
-        <div className="mx-4 mt-2 mb-2">
+        {/* <div className="mx-4 mt-2 mb-2">
           <button className="w-full text-center text-xs text-slate-600 hover:text-purple-600 transition-colors py-2">
             Need Help? <span className="underline">Documentation</span>
           </button>
-        </div>
+        </div> */}
       </aside>
     </>
   )
